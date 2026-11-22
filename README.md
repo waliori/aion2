@@ -25,7 +25,7 @@ You can also just double-click `index.html`; everything works that way except lo
 
 ### Online
 
-Published at https://daevanion-planner.pages.dev. `./deploy.sh` in `daevanion/` republishes it: it copies the seven site files into `dist/`, adds `worker.js` as the relay, and uploads that folder to Cloudflare Pages. Nothing else in the repo is uploaded.
+Published at https://daevanion-planner.pages.dev. Every push to `main` republishes it through GitHub Actions (`.github/workflows/deploy.yml`), after the planner's self-test passes. `./deploy.sh` in `daevanion/` does the same by hand: it copies the seven site files into `dist/`, adds `worker.js` as the relay, and uploads that folder to Cloudflare Pages. Nothing else in the repo is uploaded.
 
 ### Load your character
 
