@@ -2,21 +2,23 @@
 
 Small tools for AION 2. One folder per tool.
 
-## daevanion/ — Ariel board route planner
+## daevanion/ — Daevanion board route planner
+
+Plans the best route through a Daevanion board for the crystals you have, shows the numbers behind it, and compares boards. Two boards, switched with the buttons in the title band:
+
+- **Ariel**, the PvE board: scored against bosses.
+- **Azphel**, the PvP board (`?board=azphel`): scored against another player. Only PvP stats count there.
 
 ```sh
 cd daevanion
 docker compose up -d    # then open http://localhost:8787  (stop with: docker compose down)
 ```
 
-It restarts on its own after a reboot. Without Docker, `python3 serve.py` does the same thing.
+It restarts on its own after a reboot. Without Docker, `python3 serve.py` does the same thing. You can also just double-click `index.html`; everything works that way except loading a character.
 
-Enter how many Daevanion Crystal: Ariel you have and pick a goal. The board shows the best nodes to buy in gold, numbered in buy order. Click nodes you already bought to mark them as owned; the plan then spends your crystals on top of those.
-
-You can also just double-click `index.html`; everything works that way except loading a character.
-
-- `board.js` — the board data (checked against the official API: 152 of 152 nodes match)
-- `planner.js` — the maths; `node planner.js` runs its self-test
+- `boards.js` — both boards, read from the official API; a node can give one stat or two (the green ones)
+- `planner.js` — the maths: one search, and a scoring model per board; `node planner.js` runs its self-test
+- `ui.js` — what differs between the boards on the page: labels, stat families, input fields, the worked calculation
 - `i18n.js` — English and French; `node i18n.js` checks that every text has a French entry
 - `character.js` — loads a character from the official API and adds up its stats
 - `index.html` — the page
@@ -30,16 +32,11 @@ Published at https://daevanion.walior.it as a Cloudflare Worker. Cloudflare Work
 
 ### Load your character
 
-Pick your region, search your character name, click it. This fills in Attack, Damage Boost, Critical Hit, Accuracy, Damage Tolerance and Critical Damage Boost, and marks the Ariel nodes you already own. It takes 15 to 20 seconds.
+Pick your region (and, if you like, faction and server), search your character name, click it. This fills in your stats for the board you are on and marks the nodes you already own on it. It takes 15 to 20 seconds.
 
-How it works: the official site (`aion2.plaync.com`, Global) has an unauthenticated JSON API, the same one shugo.gg reads. It refuses requests made directly by a web page, which is why `serve.py` relays them. It has no "final stats" endpoint, so `character.js` adds up every stat line on your gear (base, enchant, sub stats, manastones, Arcana set bonus), your titles, your other Daevanion boards and your primary-stat bonuses.
+How it works: the official site (`aion2.plaync.com`, Global) has an unauthenticated JSON API, the same one shugo.gg reads. It refuses requests made directly by a web page, which is why `serve.py` relays them. It has no "final stats" endpoint, so `character.js` adds up every stat line on your gear (base, enchant, sub stats, manastones, Arcana set bonus), your titles, your other Daevanion boards and your primary-stat bonuses. Board ids differ per class, so they are read from the character.
 
-What that cannot see: pets, wings, skill passives, buffs and class base stats. So:
-
-- **Damage Boost, Damage Tolerance, Critical Damage Boost**: summed directly; reliable unless a passive adds more.
-- **Attack**: `((weapon average + Attack lines) × Weapon Damage Boost + Attack Bonus) × Attack increase + PvE Attack`. An estimate; compare with your stat sheet.
-- **Critical Hit and Accuracy**: the ratings, summed from gear, titles and boards with their percentage bonuses. Compare with your stat sheet.
-- **HP**: not available; type it in.
+What that cannot see: pets, wings, skill passives, buffs and class base stats. So the percentages (Damage Boost, Damage Tolerance, Critical Damage Boost) are reliable unless a passive adds more; Attack, Critical Hit, Accuracy, Defense and Evasion are estimates to compare with your stat sheet; HP is not available and has to be typed in.
 
 ### What the page shows
 
@@ -71,7 +68,7 @@ NCsoft publishes no boss stats. The planner uses Global player measurements from
 
 The planner uses the middle of each Critical Hit range and the top of each Accuracy range. The crit figure is the boss's Critical Hit Resist plus about 500: every 100 Critical Hit short costs 10% crit chance from the 50% cap. Every 100 Accuracy short gets about 10% of hits blocked (Aion 2 Maps says 6 to 7% on average), and a blocked hit deals about half its damage.
 
-Not measured by anyone: per-boss Defense and Damage Tolerance. The defaults are Boss Damage Tolerance 20% and crit damage resist 25% (reference values from a [Korean community write-up](https://www.fmkorea.com/9569335827), March 2026) and Boss Defense 0. They apply to every encounter and are editable under Your stats.
+Boss Damage Tolerance has been measured for some content (same site, "How damage works", one source): 68% on tier 4 Transcendence bosses, 58 to 67% on Conquest hard bosses. The planner uses those there (62% for Conquest hard). Not measured by anyone: per-boss Defense. Elsewhere the defaults are Boss Damage Tolerance 20% and crit damage resist 25% (reference values from a [Korean community write-up](https://www.fmkorea.com/9569335827), March 2026) and Boss Defense 0. They apply to every encounter and are editable under Your stats.
 
 "Custom encounter" on the page takes your own boss: Accuracy and Critical Hit figures, Damage Tolerance, crit damage resist, Defense, hit size and Damage Boost. All of this lives in `TARGETS` and `DEFAULT_BUILD` in `planner.js`.
 
@@ -81,19 +78,16 @@ The right route depends on what you already have: +1.5% Damage Boost is worth mo
 
 The defaults are a placeholder mid-game character, not yours. The ones listed as guesses (boss hit size, boss Damage Boost, boss Damage Tolerance, what Evasion does) cannot be read in game; they mostly move the Survival route.
 
-### The board
+### The boards
 
-`board.js`: 15×15 grid, 152 stat nodes + centre start, 232 crystals for everything, identical for every class. You can only buy a node next to one you own (up/down/left/right). Scraped from [wikily.gg](https://wikily.gg/aion-2/daevanion/cleric/ariel); totals match [aion2maps](https://aion2maps.com/guides/daevanion-boards/) and [aion2vault](https://aion2vault.com/builds/ariel-daevanion/).
+Both are 15×15 grids with 152 stat nodes and a centre start, 232 crystals for everything, identical for every class. You can only buy a node next to one you own (up/down/left/right). The data comes from the official API.
 
-| Node | Each | Cost | Count |
-|---|---|---|---|
-| PvE Damage Boost / PvE Damage Tolerance | 1.5% | 4 | 4 + 4 |
-| Boss Damage Boost / Boss Damage Tolerance | 1% | 3 | 4 + 4 |
-| Critical Hit / Critical Hit Resist | 10 | 3 | 4 + 4 |
-| PvE Attack / Boss Attack | 3 | 1 or 2 | 24 + 24 |
-| PvE Defense / Boss Defense | 30 | 1 or 2 | 24 + 24 |
-| PvE Accuracy / PvE Evasion | 5 | 1 or 2 | 24 + 24 |
-| HP / MP | 100 / 50 | 1 | 4 + 4 |
+| Cost | Ariel (PvE) | Azphel (PvP) |
+|---|---|---|
+| 4 | PvE Damage Boost / PvE Damage Tolerance +1.5% (4 + 4) | PvP Damage Boost / PvP Damage Tolerance +1.5% (4 + 4) |
+| 3 | Boss Damage Boost / Tolerance +1%, Critical Hit / Resist +10 (4 each) | Status Effect Chance / Resist +1% (8 + 8) |
+| 2, green | two stats each: PvE Attack +3 and PvE Defense +30; Boss Attack +3 and Boss Defense +30; PvE Accuracy +5 and PvE Evasion +5 (8 each) | two stats each: PvP Attack +3 and PvP Defense +30; PvP Accuracy +5 and PvP Evasion +3; PvP Critical Hit +5 and PvP Critical Hit Resist +5 (8 each) |
+| 1 | the same stats singly (16 each), HP +100, MP +50 (4 + 4) | the same stats singly (16 each), HP +100, MP +50 (4 + 4) |
 
 ### The formulas
 
@@ -119,7 +113,24 @@ What that means for the Ariel stats, and how `score()` in `planner.js` values th
 - **PvE Evasion**: no reliable data; valued at 0 by default.
 - **HP**: `HP / your HP` more effective HP.
 
-Damage maximises damage dealt, Survival maximises effective HP (HP ÷ damage taken), Both weighs them equally. All of it is "against a PvE boss".
+Damage maximises damage dealt, Survival maximises effective HP (HP ÷ damage taken), Both weighs them equally. On Ariel all of it is against a PvE boss; on Azphel, against the chosen opponent.
+
+### Azphel: the PvP model
+
+Same formula, PvP numbers ([Aion 2 Maps, PvP](https://aion2maps.com/guides/pvp/) and [How damage works](https://aion2maps.com/guides/how-damage-works/), November 2026):
+
+```
+damage = ( [ ((Attack × Weapon Dmg Boost) + Attack Bonus) × Attack Increase + PvP Attack ] × skill coefficient
+           + skill flat damage − target Defense × 0.05 )
+         × (1 + Damage Boost + PvP Damage Boost − target Damage Tolerance − target PvP Damage Tolerance)
+         × crit (1.25× base) × double (1.5×) × front/back
+```
+
+- Defense takes a smaller share of its value off a hit than in PvE. Sources give 1%, 5% or 10%; the planner uses 5%, editable.
+- Crit chance is `(your Critical Hit − their Critical Hit Resist) × 0.06%`, capped at 50%: each 100 Resist on the target takes about 6 points off.
+- Evasion only pays once it passes the attacker's Accuracy: `(their Evasion − your Accuracy) × 0.06%`, capped at 30%. Block only matters for a player with a shield.
+- Status Effect Chance and Resist cannot be turned into damage. They count for nothing unless you give them a value under My stats.
+- The opponent is a set of player stats: a copy of yours, numbers you type, or a real player loaded from the game with their own Azphel board. Survival is your HP divided by their average hit on you, the same formula the other way round.
 
 ### How the route is found
 

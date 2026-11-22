@@ -7,16 +7,17 @@
   const SEARCH = 'https://api-search.plaync.com/aion2global/search/v2/character';
   const REGIONS = { eu: 'Europe', nae: 'North America East', naw: 'North America West', la: 'South America', as: 'Asia' };
   // Board ids are different for every class (Gladiator 11 to 16, Chanter 81 to 86, ...), so they are read
-  // from the character, never hard-coded. Ariel is the fifth board.
-  const boardList = info => ((info.daevanion && info.daevanion.boardList) || []).map(b => ({ id: b.id, ariel: b.name === 'Ariel' || b.id % 10 === 5 }));
-  const openAriel = (info, boards) => {
-    const a = boardList(info).find(b => b.ariel);
+  // from the character, never hard-coded. Ariel (PvE) is the fifth board, Azphel (PvP) the sixth.
+  const KIND = { 5: 'ariel', 6: 'azphel' };
+  const boardList = info => ((info.daevanion && info.daevanion.boardList) || []).map(b => ({ id: b.id, kind: KIND[b.id % 10] || '' }));
+  const openNodes = (info, boards, kind) => {
+    const a = boardList(info).find(b => b.kind === kind);
     return ((a && boards[a.id] && boards[a.id].nodeList) || []).filter(n => n.open && n.type === 'Stat').map(n => [n.col - 1, n.row - 1]);
   };
   const num = v => parseFloat(String(v).replace(/[+,]/g, ''));
 
-  // -> { flat: {name: sum}, pct: {name: sum}, weapon: average weapon Attack }
-  function collect(info, items, boards) {
+  // -> { flat: {name: sum}, pct: {name: sum}, weapon: average weapon Attack }, leaving out the board named in `skip`
+  function collect(info, items, boards, skip) {
     const out = { flat: {}, pct: {}, weapon: 0 };
     const add = (name, v) => {
       const s = String(v), n = num(s), to = s.includes('%') ? out.pct : out.flat;
@@ -38,29 +39,45 @@
       }
     }
     for (const t of (info.title && info.title.titleList) || []) for (const s of [...(t.equipStatList || []), ...(t.statList || [])]) addDesc(s.desc);
-    for (const b of boardList(info)) if (!b.ariel) for (const s of (boards[b.id] && boards[b.id].openStatEffectList) || []) addDesc(s.desc);
+    for (const b of boardList(info)) if (b.kind !== skip) for (const s of (boards[b.id] && boards[b.id].openStatEffectList) || []) addDesc(s.desc);
     for (const s of (info.stat && info.stat.statList) || []) for (const d of s.statSecondList || []) addDesc(d);  // "Attack increase +3.2%"
     return out;
   }
 
-  // -> { build: values for the planner, owned: [[x, y]] Ariel nodes already open }
-  function toBuild(info, items, boards) {
-    const { flat, pct, weapon } = collect(info, items, boards);
-    const f = k => flat[k] || 0, p = k => pct[k] || 0;
-    const attack = ((weapon + f('Attack')) * (1 + p('Weapon Damage Boost') / 100) + f('Attack Bonus')) * (1 + p('Attack increase') / 100)
-      + f('PvE Attack') + f('Boss Attack');
-    const build = {
-      attack: Math.round(attack),
-      damage_boost_pct: +(p('Damage Boost') + p('PvE Damage Boost') + p('Boss Damage Boost')).toFixed(2),
-      tolerance_pct: +(p('Damage Tolerance') + p('PvE Damage Tolerance') + p('Boss Damage Tolerance')).toFixed(2),
-      crit_damage_boost_pct: +p('Critical Damage Boost').toFixed(2),
-      crit_hit: Math.round(f('Critical Hit') * (1 + p('Critical Hit increase') / 100)),
-      accuracy: Math.round((f('Accuracy') + f('Accuracy Bonus')) * (1 + p('Accuracy increase') / 100) + f('PvE Accuracy')),
+  // -> { build: values for the planner, parts: how Attack was added up, owned: [[x, y]] nodes already open on that board }
+  // kind is the board being planned ('ariel' or 'azphel'). Its own nodes are left out of the build, because the planner adds
+  // them itself; withBoard keeps them in, for an opponent, who fights with their board.
+  function toBuild(info, items, boards, kind, withBoard) {
+    kind = kind || 'ariel';
+    const { flat, pct, weapon } = collect(info, items, boards, withBoard ? null : kind);  // null skips nothing
+    const f = k => flat[k] || 0, p = k => pct[k] || 0, up = (v, k) => v * (1 + p(k) / 100), r2 = v => +v.toFixed(2);
+    const base = up((weapon + f('Attack')) * (1 + p('Weapon Damage Boost') / 100) + f('Attack Bonus'), 'Attack increase');
+    const crit = up(f('Critical Hit'), 'Critical Hit increase'), accuracy = up(f('Accuracy') + f('Accuracy Bonus'), 'Accuracy increase');
+    const pvp = kind === 'azphel', extra = pvp ? f('PvP Attack') : f('PvE Attack') + f('Boss Attack');
+    const build = !pvp ? {
+      attack: Math.round(base + extra),
+      damage_boost_pct: r2(p('Damage Boost') + p('PvE Damage Boost') + p('Boss Damage Boost')),
+      tolerance_pct: r2(p('Damage Tolerance') + p('PvE Damage Tolerance') + p('Boss Damage Tolerance')),
+      crit_damage_boost_pct: r2(p('Critical Damage Boost')),
+      crit_hit: Math.round(crit),
+      accuracy: Math.round(accuracy + f('PvE Accuracy')),
+    } : {
+      attack: Math.round(base + extra),
+      damage_boost_pct: r2(p('Damage Boost') + p('PvP Damage Boost')),
+      tolerance_pct: r2(p('Damage Tolerance') + p('PvP Damage Tolerance')),
+      crit_damage_boost_pct: r2(p('Critical Damage Boost')),
+      crit_damage_tolerance_pct: r2(p('Critical Damage Tolerance')),
+      crit_hit: Math.round(crit + f('PvP Critical Hit')),
+      crit_resist: Math.round(up(f('Critical Hit Resist'), 'Critical Hit Resist increase') + f('PvP Critical Hit Resist')),
+      accuracy: Math.round(accuracy + f('PvP Accuracy')),
+      evasion: Math.round(up(f('Evasion') + f('Evasion Bonus'), 'Evasion increase') + f('PvP Evasion')),
+      block: Math.round(up(f('Block'), 'Block increase') + f('PvP Block')),
+      defense: Math.round(up(f('Defense') + f('Defense Bonus'), 'Defense increase') + f('PvP Defense')),
     };
     // the pieces of the Attack figure, so the page can show its working
     const parts = { attack: build.attack, weapon: Math.round(weapon), lines: f('Attack'), weaponBoost: p('Weapon Damage Boost'), bonus: f('Attack Bonus'),
-      increase: p('Attack increase'), flat: f('PvE Attack') + f('Boss Attack') };
-    return { build, parts, owned: openAriel(info, boards) };
+      increase: p('Attack increase'), flat: extra };
+    return { build, parts, owned: openNodes(info, boards, kind) };
   }
 
   async function get(url) {
@@ -96,12 +113,12 @@
     return { info, items, boards };
   }
 
-  // just the open Ariel nodes of a character, as [x, y]: two calls, for comparing boards
-  async function loadBoard(hit) {
+  // just the open nodes of one board of a character, as [x, y]: two calls, for comparing boards
+  async function loadBoard(hit, kind) {
     const q = `lang=en-US&characterId=${encodeURIComponent(hit.characterId)}&serverId=${hit.serverId}&region=${hit.region}`;
-    const info = await get(`${API}/info?${q}`), a = boardList(info).find(b => b.ariel);
+    const info = await get(`${API}/info?${q}`), a = boardList(info).find(b => b.kind === (kind || 'ariel'));
     if (!a) return [];
-    return openAriel(info, { [a.id]: await get(`${API}/daevanion/detail?${q}&boardId=${a.id}`) });
+    return openNodes(info, { [a.id]: await get(`${API}/daevanion/detail?${q}&boardId=${a.id}`) }, a.kind);
   }
 
   const api = { REGIONS, servers, search, load, loadBoard, toBuild, collect };

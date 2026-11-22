@@ -26,11 +26,12 @@ const FR = {
   // --- planning by hand ---
   'A click on the board': 'Un clic sur le plateau', 'Marks what I own': 'Marque ce que je possède', 'Builds my own plan': 'Construit mon propre plan',
   'My own plan': 'Mon propre plan', 'Compare with the recommended plan': 'Comparer avec le plan recommandé', 'Clear my plan': 'Effacer mon plan',
-  'You already own this node.': 'Vous possédez déjà ce nœud.', ', in my plan': ', dans mon plan',
-  'Pick a node next to your board or your plan first.': 'Choisissez d’abord un nœud voisin de votre plateau ou de votre plan.',
-  'Remove the nodes further out first.': 'Retirez d’abord les nœuds plus éloignés.',
-  'Click nodes next to your board to build your own plan. The recommended route is hidden while you do.': 'Cliquez sur des nœuds voisins de votre plateau pour construire votre propre plan. Le chemin recommandé est masqué pendant ce temps.',
-  'Your own plan: {nodes} for {spent} of your {crystals}. Damage dealt {d}, effective HP {e}.': 'Votre propre plan : {nodes} pour {spent} sur vos {crystals}. Dégâts infligés {d}, PV effectifs {e}.',
+  ', in my plan': ', dans mon plan',
+  'Click a node to add it to your plan, or to take it out.': 'Cliquez sur un nœud pour l’ajouter à votre plan, ou pour l’en retirer.', 'Start from my board': 'Partir de mon plateau', 'Start from the recommended plan': 'Partir du plan recommandé',
+  'Your plan is empty. Click any node and the cheapest path to it is added; click a planned node to take it out, with whatever hangs from it. The recommended route is hidden while you plan.':
+    'Votre plan est vide. Cliquez sur n’importe quel nœud : le chemin le moins cher jusqu’à lui est ajouté ; cliquez sur un nœud planifié pour le retirer, avec tout ce qui en dépend. Le chemin recommandé est masqué pendant que vous planifiez.',
+  'Your own plan: {nodes} for {spent}. Damage gained from the board {d}, survivability {e}.': 'Votre propre plan : {nodes} pour {spent}. Dégâts gagnés grâce au plateau {d}, survie {e}.',
+  'You have {have}: {board} in your board and {spend} to spend.': 'Vous avez {have} : {board} dans votre plateau et {spend} à dépenser.',
   'That is {n} more than you have.': 'C’est {n} de plus que ce que vous avez.',
   '{name}: {nodes}, +{total} in total': '{name} : {nodes}, +{total} au total',
 
@@ -211,6 +212,132 @@ const FR = {
     '{name} chargé : ATQ {attack}, Boost de DGT {boost}%, CRIT {crit}, Précision {acc}, Tolérance aux DGT {tol}%, Boost de DGT CRIT {cdb}%. {nodes} marqué(s) comme possédé(s). Calculé à partir de l’équipement, des titres et des plateaux ; les familiers, les ailes, les passifs de compétence et les stats de base ne sont pas dans les données, et les PV ne sont pas disponibles. Vérifiez-les dans Mes stats.',
 };
 
+// --- the Azphel (PvP) board, and what changed when the planner learned a second board ---
+Object.assign(FR, {
+  // stats (official French client terms, read from the API)
+  'PvP Attack': 'ATQ JcJ', 'PvP Defense': 'DÉF JcJ', 'PvP Accuracy': 'Précision JcJ', 'PvP Evasion': 'Esquive JcJ', 'PvP Damage Boost': 'Boost de DGT JcJ',
+  'PvP Damage Tolerance': 'Tolérance aux DGT JcJ', 'PvP Critical Hit': 'CRIT JcJ', 'PvP Critical Hit Resist': 'RÉS CRIT JcJ',
+  'Status Effect Chance': 'Taux altération état', 'Status Effect Resist': 'RÉS aux altérations d’état',
+  // page
+  'Plan the best route through the AION 2 Daevanion boards, Ariel for PvE and Azphel for PvP, see the numbers behind it, and compare boards side by side.':
+    'Trouvez le meilleur chemin sur les plateaux Daevanion d’AION 2, Ariel pour le JcE et Azphel pour le JcJ, voyez les calculs derrière, et comparez deux plateaux côte à côte.',
+  'Daevanion board': 'Plateau Daevanion',
+  Refresh: 'Actualiser', 'Change character': 'Changer de personnage',
+  'Using {name}, {server}, {faction}, level {level}. Loaded {when}.': 'Personnage utilisé : {name}, {server}, {faction}, niveau {level}. Chargé le {when}.',
+  'The other board will use this character too, without loading again.': 'L’autre plateau utilisera aussi ce personnage, sans le recharger.',
+  'Stats and owned nodes on this board now come from {name}, the character you loaded. Nothing was loaded again.': 'Les stats et les nœuds possédés de ce plateau viennent maintenant de {name}, le personnage que vous avez chargé. Rien n’a été rechargé.', 'Ariel, PvE': 'Ariel, JcE', 'Azphel, PvP': 'Azphel, JcJ',
+  'Azphel board route planner': 'Planificateur du plateau d’Azphel', 'Azphel board route planner.': 'Planificateur du plateau d’Azphel.',
+  'The PvE board. Turquoise is what to buy, in order. Red is what you own.': 'Le plateau JcE. En turquoise : ce qu’il faut acheter, dans l’ordre. En rouge : ce que vous possédez.',
+  'The PvP board. Turquoise is what to buy, in order. Red is what you own.': 'Le plateau JcJ. En turquoise : ce qu’il faut acheter, dans l’ordre. En rouge : ce que vous possédez.',
+  'Green-cost nodes give two stats. Click a type or a family beside the board to colour its nodes': 'Les nœuds verts donnent deux stats. Cliquez sur un type ou une famille à côté du plateau pour colorer ses nœuds',
+  '{name}: {n} node open on this board.': '{name} : {n} nœud ouvert sur ce plateau.', '{name}: {n} nodes open on this board.': '{name} : {n} nœuds ouverts sur ce plateau.',
+  'Reading their board…': 'Lecture de son plateau…',
+  // Ariel, changed texts
+  'Boss Damage Tolerance %, where none is measured': 'Tolérance aux DGT du boss %, quand aucune n’est mesurée',
+  'The same route everywhere. Critical Hit, Accuracy and Damage Tolerance figures are measured by players on Global (Aion 2 Maps, November 2026); where a boss’s Damage Tolerance was not measured, the guess from My stats is used.':
+    'Le même chemin partout. Les seuils de CRIT et de Précision et la Tolérance aux DGT sont mesurés par des joueurs sur le serveur Global (Aion 2 Maps, novembre 2026) ; quand la Tolérance d’un boss n’a pas été mesurée, l’estimation de Mes stats est utilisée.',
+  'All Damage Boost types add into one bucket, and the boss’s Damage Tolerance comes off it. Against a boss with 68% Tolerance and 25% boost of your own, the bucket is only 57%, so +1.5% is 1.5 ÷ 57 = +2.6% damage. The more Tolerance the boss has, the more each Damage Boost node is worth.':
+    'Tous les Boosts de DGT s’additionnent dans un seul multiplicateur, dont on retire la Tolérance aux DGT du boss. Contre un boss à 68 % de Tolérance, avec 25 % de boost à vous, il ne reste que 57 % : +1,5 % donne alors 1,5 ÷ 57 = +2,6 % de dégâts. Plus le boss a de Tolérance, plus chaque nœud de Boost de DGT rapporte.',
+  'The green nodes give two stats at once, and both are counted.': 'Les nœuds verts donnent deux stats à la fois, et les deux sont comptées.',
+  'Crit cap at about 1,420 Critical Hit. Parries stop between 800 and 1,075 Accuracy depending on the boss; the plan uses 1,075. Boss Damage Tolerance measured at 68%.':
+    'Plafond de critique vers 1 420 de CRIT. Les parades cessent entre 800 et 1 075 de Précision selon le boss ; le plan utilise 1 075. Tolérance aux DGT du boss mesurée à 68 %.',
+  'Crit cap at 1,405 to 1,425 Critical Hit. Parries stop between 800 and 1,000 Accuracy; the plan uses 1,000. Boss Damage Tolerance measured at 58 to 67%; the plan uses 62%.':
+    'Plafond de critique entre 1 405 et 1 425 de CRIT. Les parades cessent entre 800 et 1 000 de Précision ; le plan utilise 1 000. Tolérance aux DGT du boss mesurée entre 58 et 67 % ; le plan utilise 62 %.',
+  'Crit cap at 1,525 to 1,555 Critical Hit. Parries stop at about 925 Accuracy, 1,075 on Transcendent Bakarma; the plan uses 1,075. Boss Damage Tolerance measured at 58 to 67%; the plan uses 62%.':
+    'Plafond de critique entre 1 525 et 1 555 de CRIT. Les parades cessent vers 925 de Précision, 1 075 sur Bakarma transcendant ; le plan utilise 1 075. Tolérance aux DGT du boss mesurée entre 58 et 67 % ; le plan utilise 62 %.',
+  // Azphel: opponents
+  'A player with your stats': 'Un joueur avec vos stats',
+  'Your opponent has exactly your stats, without your Azphel nodes. A fair default when you have nobody particular in mind.': 'Votre adversaire a exactement vos stats, sans vos nœuds d’Azphel. Un choix neutre quand vous ne visez personne en particulier.',
+  'Your opponent.': 'Votre adversaire.', 'Your chosen opponent': 'L’adversaire que vous avez choisi', 'Your chosen opponent: {name}': 'L’adversaire que vous avez choisi : {name}',
+  'A player to plan against. Load one from the game, with their own Azphel board, or type the numbers. Pick “Your chosen opponent” under Against to use them.':
+    'Un joueur contre qui planifier. Chargez-en un depuis le jeu, avec son propre plateau d’Azphel, ou saisissez les chiffres. Choisissez « L’adversaire que vous avez choisi » dans Contre pour l’utiliser.',
+  'The opponent set under My stats, with the numbers shown there.': 'L’adversaire réglé dans Mes stats, avec les chiffres qui y sont affichés.',
+  'Copy my own stats': 'Copier mes propres stats',
+  '{name} is now your opponent, with their gear, titles and boards added up. Their numbers are below; correct them if you know better.':
+    '{name} est maintenant votre adversaire, avec son équipement, ses titres et ses plateaux additionnés. Ses chiffres sont ci-dessous ; corrigez-les si vous en savez plus.',
+  'Your opponent now has your own stats.': 'Votre adversaire a maintenant vos propres stats.', 'Your opponent is {name}.': 'Votre adversaire est {name}.',
+  'Their Attack': 'Son ATQ', 'Their Damage Boost %': 'Son Boost de DGT %', 'Their Critical Hit': 'Son CRIT', 'Their Accuracy': 'Sa Précision',
+  'Their Critical Damage Boost %': 'Son Boost de DGT CRIT %', 'Their Defense': 'Sa DÉF', 'Their Damage Tolerance %': 'Sa Tolérance aux DGT %',
+  'Their Critical Hit Resist': 'Sa RÉS aux CRIT', 'Their Evasion': 'Son Esquive', 'Their Block (0 without a shield)': 'Son Blocage (0 sans bouclier)', 'Their Critical Damage Tolerance %': 'Sa Tolérance aux DGT CRIT %',
+  // Azphel: your stats
+  'Attack, total (after weapon boost and attack increase, PvP Attack included)': 'ATQ totale (après boost d’arme et augmentation de l’ATQ, ATQ JcJ comprise)',
+  'Damage Boost % (generic + PvP)': 'Boost de DGT % (général + JcJ)', 'Critical Hit (PvP Critical Hit included)': 'CRIT (CRIT JcJ compris)',
+  'Accuracy (PvP Accuracy included, PvE Accuracy left out)': 'Précision (Précision JcJ comprise, Précision JcE exclue)',
+  'Defense (PvP Defense included)': 'DÉF (DÉF JcJ comprise)', 'Damage Tolerance % (generic + PvP)': 'Tolérance aux DGT % (générale + JcJ)',
+  'Critical Hit Resist (PvP included)': 'RÉS aux CRIT (JcJ comprise)', 'Evasion (PvP Evasion included)': 'Esquive (Esquive JcJ comprise)',
+  'Block (0 unless you carry a shield)': 'Blocage (0 sauf si vous portez un bouclier)', 'Critical Damage Tolerance %': 'Tolérance aux DGT CRIT %',
+  'How PvP works. These are community figures, the same for you and your opponent.': 'Le fonctionnement du JcJ. Ce sont des chiffres de la communauté, les mêmes pour vous et votre adversaire.',
+  'Share of Defense taken off a hit (sources say 0.01, 0.05 or 0.1)': 'Part de la DÉF retirée d’un coup (les sources donnent 0,01, 0,05 ou 0,1)',
+  'Crit multiplier before Critical Damage Boost': 'Multiplicateur de critique avant le Boost de DGT CRIT',
+  'Crit chance % per point of Critical Hit over their Resist': 'Chance de critique % par point de CRIT au-dessus de sa RÉS',
+  'Evade chance % per point of Evasion over the attacker’s Accuracy': 'Chance d’esquive % par point d’Esquive au-dessus de la Précision de l’attaquant',
+  'Evade chance cap %': 'Plafond de chance d’esquive %',
+  'Block chance % per point of Block over the attacker’s Accuracy': 'Chance de blocage % par point de Blocage au-dessus de la Précision de l’attaquant',
+  'What 1% Status Effect Chance is worth to you, as % damage (0 = not counted)': 'Ce que vaut pour vous 1 % de Taux altération état, en % de dégâts (0 = non compté)',
+  'What 1% Status Effect Resist is worth to you, as % survival (0 = not counted)': 'Ce que vaut pour vous 1 % de RÉS aux altérations d’état, en % de survie (0 = non compté)',
+  'Without any Azphel nodes. Only what counts against players is here: PvE and Boss stats do nothing in PvP.': 'Sans aucun nœud d’Azphel. Seul ce qui compte contre des joueurs figure ici : les stats JcE et contre les boss ne servent à rien en JcJ.',
+  'Loaded {name}: Attack {attack}, Damage Boost {boost}%, Critical Hit {crit}, Accuracy {acc}, Defense {def}, Damage Tolerance {tol}%, Critical Hit Resist {res}, Evasion {eva}, Block {block}. {nodes} marked as owned. Added up from gear, titles and boards; pets, wings, skill passives and base stats are not in the data, and HP is not available. Check them under My stats.':
+    '{name} chargé : ATQ {attack}, Boost de DGT {boost}%, CRIT {crit}, Précision {acc}, DÉF {def}, Tolérance aux DGT {tol}%, RÉS aux CRIT {res}, Esquive {eva}, Blocage {block}. {nodes} marqué(s) comme possédé(s). Calculé à partir de l’équipement, des titres et des plateaux ; les familiers, les ailes, les passifs de compétence et les stats de base ne sont pas dans les données, et les PV ne sont pas disponibles. Vérifiez-les dans Mes stats.',
+  // Azphel: tables
+  '{crit} crit, {blocked} evaded': '{crit} de crit., {blocked} esquivés', 'Hits evaded': 'Coups esquivés', 'Evaded after': 'Esquivés après',
+  'Damage Boost, after their Tolerance': 'Boost de DGT, après sa Tolérance', 'A 100% skill, selected opponent': 'Compétence à 100 %, adversaire choisi',
+  'Against each opponent.': 'Contre chaque adversaire.', Opponent: 'Adversaire',
+  'The same route against each opponent. An opponent is a set of player stats: your own, or the one you chose under My stats.': 'Le même chemin contre chaque adversaire. Un adversaire, c’est un jeu de stats de joueur : les vôtres, ou celui que vous avez choisi dans Mes stats.',
+  'One node of each kind on top of what you own, against the selected opponent, sorted by worth per crystal for your goal.': 'Un nœud de chaque type en plus de ce que vous possédez, contre l’adversaire choisi, trié par valeur par cristal pour votre objectif.',
+  'Both boards are valued with your stats, against the selected opponent.': 'Les deux plateaux sont évalués avec vos stats, contre l’adversaire choisi.',
+  // Azphel: how it is calculated
+  'Only PvP stats count here. PvE and Boss Attack, Damage Boost, Accuracy and the rest do nothing against a player.': 'Seules les stats JcJ comptent ici. L’ATQ, le Boost de DGT, la Précision et le reste en JcE ou contre les boss ne servent à rien contre un joueur.',
+  'PvP Attack is added after Attack Increase, so each point is worth 1 ÷ your Attack once their Defense is off.': 'L’ATQ JcJ s’ajoute après l’Augmentation de l’ATQ : chaque point vaut donc 1 ÷ votre ATQ, une fois sa DÉF retirée.',
+  'Damage Boost and PvP Damage Boost add into one bucket, and the target’s Damage Tolerance and PvP Damage Tolerance come off it. The less is left, the more each point is worth.':
+    'Le Boost de DGT et le Boost de DGT JcJ s’additionnent dans un seul multiplicateur, dont on retire la Tolérance aux DGT et la Tolérance aux DGT JcJ de la cible. Moins il en reste, plus chaque point rapporte.',
+  'Defense takes a flat share of its value off every hit. In PvP that share is smaller than the 10% of PvE; sources give 1%, 5% or 10%, and the planner uses 5% unless you change it.':
+    'La DÉF retire à chaque coup une part fixe de sa valeur. En JcJ cette part est plus faible que les 10 % du JcE ; les sources donnent 1 %, 5 % ou 10 %, et le planificateur utilise 5 % sauf si vous le changez.',
+  'A crit starts at 1.25× in PvP, not 1.5×. Crit chance tops out near 50%, and each 100 Critical Hit Resist on the target takes about 6 points off.':
+    'Un critique commence à 1,25× en JcJ, et non 1,5×. La chance de critique plafonne vers 50 %, et chaque tranche de 100 de RÉS aux CRIT de la cible en retire environ 6 points.',
+  'Evasion does nothing until it passes the attacker’s Accuracy; past that, each 100 points evade about 6% of hits, up to 30%. Accuracy over the target’s Evasion is wasted.':
+    'L’Esquive ne fait rien tant qu’elle ne dépasse pas la Précision de l’attaquant ; au-delà, chaque tranche de 100 points esquive environ 6 % des coups, jusqu’à 30 %. La Précision au-dessus de l’Esquive de la cible est perdue.',
+  'Block only helps a player with a shield.': 'Le Blocage ne sert qu’à un joueur qui porte un bouclier.',
+  'Status Effect Chance and Resist decide whether stuns and the like land. They cannot be turned into damage, so they count for nothing unless you give them a value in My stats.':
+    'Le Taux altération état et la RÉS aux altérations décident si les étourdissements et autres contrôles passent. On ne peut pas les convertir en dégâts : ils ne comptent donc pas, sauf si vous leur donnez une valeur dans Mes stats.',
+  'The green nodes give two stats at once, one offensive and one defensive, and both are counted.': 'Les nœuds verts donnent deux stats à la fois, une offensive et une défensive, et les deux sont comptées.',
+  'Survival here is how many of the opponent’s hits you can take: your HP ÷ their average hit on you.': 'La survie, ici, c’est le nombre de coups de l’adversaire que vous pouvez encaisser : vos PV ÷ son coup moyen sur vous.',
+  'This is one hit of a skill that does 100% of your Attack. Double hits (1.5× in PvP) and front or back bonuses multiply on top; they are not on this board, so they are left at 1.':
+    'Il s’agit d’un coup d’une compétence qui inflige 100 % de votre ATQ. Les coups doubles (1,5× en JcJ) et les bonus de face ou de dos se multiplient par-dessus ; ils ne sont pas sur ce plateau et restent donc à 1.',
+  '3 ÷ {n} Attack after Defense': '3 ÷ {n} d’ATQ après la DÉF',
+  '{v} ÷ {bucket} (100 + your Damage Boost − their Tolerance)': '{v} ÷ {bucket} (100 + votre Boost de DGT − sa Tolérance)',
+  'You are at the crit cap against them': 'Vous êtes au plafond de critique contre lui', 'Still under their {n} Critical Hit Resist': 'Encore sous ses {n} de RÉS aux CRIT',
+  '5 points add {x}% crit chance': '5 points ajoutent {x}% de chance de critique',
+  'They never evade or block you': 'Il ne vous esquive ni ne vous bloque jamais', '5 points make them evade {x}% fewer hits': '5 points lui font esquiver {x}% de coups en moins',
+  '{x} damage off their {n} hit': '{x} dégâts en moins sur son coup de {n}', '{v} ÷ {bucket} (their multiplier against you)': '{v} ÷ {bucket} (son multiplicateur contre vous)',
+  'They never crit you': 'Il ne vous fait jamais de critique', '5 points take {x}% off their crit chance': '5 points retirent {x}% à sa chance de critique',
+  'You are at the evasion cap against them': 'Vous êtes au plafond d’esquive contre lui', 'Still under their {n} Accuracy, where evading starts': 'Encore sous ses {n} de Précision, seuil où l’esquive commence',
+  '3 points evade {x}% more of their hits': '3 points esquivent {x}% de ses coups en plus',
+  'Counted as {x}% damage, the value you set': 'Compté comme {x}% de dégâts, la valeur que vous avez fixée', 'Counted as {x}% survival, the value you set': 'Compté comme {x}% de survie, la valeur que vous avez fixée',
+  'Not counted: set a value in My stats': 'Non compté : fixez une valeur dans Mes stats',
+  '(({weapon} weapon + {lines} Attack lines) × {wb} Weapon Boost + {bonus} Attack Bonus) × {inc} Attack Increase + {flat} PvP Attack':
+    '(({weapon} arme + {lines} lignes d’ATQ) × {wb} Boost d’arme + {bonus} ATQ supplémentaire) × {inc} Augmentation de l’ATQ + {flat} ATQ JcJ',
+  '{a} + {pvp} PvP Attack from nodes': '{a} + {pvp} ATQ JcJ venant des nœuds', 'After their Defense': 'Après sa DÉF',
+  '1 + {yours} yours + {nodes} from nodes − {tol} their Tolerance': '1 + {yours} à vous + {nodes} des nœuds − {tol} de sa Tolérance',
+  '{n} × ({base} + {cdb} Critical Damage Boost − {res} their Critical Damage Tolerance)': '{n} × ({base} + {cdb} de Boost de DGT CRIT − {res} de sa Tolérance aux DGT CRIT)',
+  '({have} Critical Hit − {res} their Resist) × {k}%, between 0 and the {cap} cap': '({have} de CRIT − {res} de sa RÉS) × {k}%, entre 0 et le plafond de {cap}',
+  '({eva} their Evasion − {acc} your Accuracy) × {k}%, between 0 and {cap}': '({eva} de son Esquive − {acc} de votre Précision) × {k}%, entre 0 et {cap}',
+  'Hits blocked by their shield': 'Coups bloqués par son bouclier', '({block} their Block − {acc} your Accuracy) × {k}%, never below 0': '({block} de son Blocage − {acc} de votre Précision) × {k}%, jamais sous 0',
+  '({n} + {p} × ({c} − {n})) × (1 − {e} evaded)': '({n} + {p} × ({c} − {n})) × (1 − {e} esquivés)', '× (1 − {s} × {loss} lost per block)': '× (1 − {s} × {loss} perdus par blocage)',
+  'Their average hit on you, after this plan': 'Son coup moyen sur vous, après ce plan',
+  'The same formula the other way round: their stats against your Defense, Tolerance, Resist and Evasion': 'La même formule dans l’autre sens : ses stats contre votre DÉF, votre Tolérance, votre RÉS et votre Esquive',
+  'Their hit on your board now': 'Son coup sur votre plateau actuel', 'Their hit on an empty board': 'Son coup sur un plateau vide',
+  [`damage = ( [ ((Attack × Weapon Boost) + Attack Bonus) × Attack Increase
+             + PvP Attack ] × skill coefficient
+           + skill flat damage − target Defense × 0.05 )
+       × (1 + Damage Boost + PvP Boost − target Tolerance − target PvP Tolerance)
+       × crit (1.25×) × double (1.5×) × front/back`]:
+`dégâts = ( [ ((ATQ × Boost d’arme) + ATQ supplémentaire) × Augmentation de l’ATQ
+             + ATQ JcJ ] × coefficient de compétence
+           + dégâts fixes de compétence − DÉF de la cible × 0,05 )
+       × (1 + Boost de DGT + Boost JcJ − Tolérance de la cible − Tolérance JcJ de la cible)
+       × critique (1,25×) × double (1,5×) × face/dos`,
+});
+
 const LANG = (() => {
   if (typeof localStorage === 'undefined') return 'en';
   try { const s = localStorage.getItem('ariel-lang'); if (s === 'fr' || s === 'en') return s; } catch (e) {}
@@ -237,7 +364,6 @@ function translatePage(doc) {
     const key = n.nodeValue.replace(/\s+/g, ' ').trim();
     if (FR[key]) n.nodeValue = n.nodeValue.replace(n.nodeValue.trim(), FR[key]);
   }
-  for (const p of doc.querySelectorAll('pre')) if (FR[p.textContent]) p.textContent = FR[p.textContent];
   for (const e of doc.querySelectorAll('[placeholder], [aria-label]')) for (const a of ['placeholder', 'aria-label']) {
     const v = e.getAttribute(a);
     if (v && FR[v]) e.setAttribute(a, FR[v]);
@@ -253,21 +379,24 @@ if (typeof module !== 'undefined' && require.main === module) {
   const html = read('index.html'), cut = html.indexOf('<script>'), keys = new Set();
   const unescape = s => s.replace(/\\'/g, "'");
   // texts between tags, and the attributes shown or read aloud
-  for (const m of html.matchAll(/<pre>([\s\S]*?)<\/pre>/g)) keys.add(m[1]);
-  const body = html.slice(html.indexOf('<body'), cut).replace(/<pre>[\s\S]*?<\/pre>/g, '').replace(/<button[^>]*data-lang[\s\S]*?<\/button>/g, '');
+  const body = html.slice(html.indexOf('<body'), cut).replace(/<button[^>]*data-lang[\s\S]*?<\/button>/g, '');
   for (const m of body.matchAll(/>([^<>]+)</g)) { const t = m[1].replace(/\s+/g, ' ').trim(); if (t && !/^[0-9%+.]*$/.test(t)) keys.add(t); }
   for (const m of body.matchAll(/(?:placeholder|aria-label)="([^"]+)"/g)) keys.add(m[1]);
   for (const m of html.matchAll(/<title>([^<]+)<|name="description" content="([^"]+)"/g)) keys.add(m[1] || m[2]);
-  // T('...') calls, including both branches of T(cond ? '...' : '...'), and the label tables
-  const script = html.slice(cut);
-  for (const m of script.matchAll(/T\((?:[^'()]*\?\s*)?'((?:[^'\\]|\\.)*)'(?:\s*:\s*'((?:[^'\\]|\\.)*)')?/g)) { keys.add(unescape(m[1])); if (m[2]) keys.add(unescape(m[2])); }
-  for (const name of ['FIELDS', 'CUSTOM_FIELDS']) for (const m of script.slice(script.indexOf('const ' + name), script.indexOf('];', script.indexOf('const ' + name))).matchAll(/, '((?:[^'\\]|\\.)*)'\]/g)) keys.add(unescape(m[1]));
-  for (const name of ['SIDES', 'GOAL_NAMES']) for (const m of script.slice(script.indexOf('const ' + name), script.indexOf('};', script.indexOf('const ' + name))).matchAll(/: '([^']*)'/g)) keys.add(m[1]);
-  // stat names, encounters, comparison strategies, regions and messages from the other scripts
+  // in the scripts: T('...') and L('...') calls, both branches of T(cond ? '...' : '...'), and L(`...`) blocks
+  for (const src of [html.slice(cut), read('ui.js')]) {
+    for (const m of src.matchAll(/\b[TL]\((?:[^'`()]*\?\s*)?'((?:[^'\\]|\\.)*)'(?:\s*:\s*'((?:[^'\\]|\\.)*)')?/g)) { keys.add(unescape(m[1])); if (m[2]) keys.add(unescape(m[2])); }
+    for (const m of src.matchAll(/\bL\(`([^`]*)`\)/g)) keys.add(m[1]);
+    for (const m of src.matchAll(/const (?:SIDES|GOAL_NAMES|FACTIONS) = \{([^}]*)\}/g)) for (const k of m[1].matchAll(/: '([^']*)'/g)) keys.add(k[1]);
+  }
+  // stat names, targets, comparison strategies, regions and messages from the other scripts, for both boards
   const P = require('./planner.js'), C = require('./character.js');
-  for (const n of P.NODES) keys.add(n.stat);
-  for (const t of P.TARGETS) { keys.add(t.name); keys.add(t.note); }
-  for (const b of P.baselines(1, P.DEFAULT_BUILD, 'dps', [], P.TARGETS[0])) keys.add(b.name);
+  for (const id of ['ariel', 'azphel']) {
+    const B = P.make(id);
+    for (const n of B.NODES) for (const e of n.fx) keys.add(e[0]);
+    for (const t of B.TARGETS) { keys.add(t.name); keys.add(t.note); }
+    for (const b of B.baselines(1, B.DEFAULT_BUILD, 'dps', [], B.TARGETS[0])) keys.add(b.name);
+  }
   for (const r of Object.values(C.REGIONS)) keys.add(r);
   for (const m of read('character.js').matchAll(/(?:onProgress|new Error)\(['`]([^'`$]+)['`]\)/g)) keys.add(m[1]);
   const missing = [...keys].filter(k => !(k in FR));
