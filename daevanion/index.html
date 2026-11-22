@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ariel board route planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #e7ecf7; --cloud: #fbfcff; --ink: #18223d; --mist: #66708c; --line: #cbd3e6;
+    --gold: #a8741a; --gold-soft: #f6e3b4;
+    --r1: #98a1b4; --r2: #4a9a66; --r3: #3d6fc4; --r4: #d47a22;
+    --tile: clamp(34px, min(3.6vw, 5.3vh), 50px);  /* whole board fits on screen */
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--sky); color: var(--ink); font: 400 17px/1.45 "Alegreya Sans", "Segoe UI", sans-serif; }
+  h1, h2 { font-family: Alegreya, Georgia, serif; font-weight: 700; margin: 0; line-height: 1.15; }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.25rem; margin-bottom: .5rem; }
+  p { margin: 0 0 .6rem; max-width: 68ch; }
+  header { padding: 20px 24px 8px; }
+  header p { color: var(--mist); margin-top: 4px; }
+  main { display: grid; grid-template-columns: minmax(0, auto) minmax(300px, 1fr); gap: 24px; padding: 8px 24px 32px; align-items: start; }
+  @media (max-width: 1020px) { main { grid-template-columns: 1fr; } }
+
+  .boardwrap { overflow-x: auto; padding-bottom: 6px; }
+  #board { display: grid; grid-template-columns: repeat(15, var(--tile)); grid-auto-rows: var(--tile); gap: 3px; width: max-content;
+           padding: 12px; background: var(--cloud); border: 1px solid var(--line); border-radius: 14px; }
+  .node { position: relative; border: 0; border-bottom: 4px solid var(--rar); border-radius: 6px; background: #eef1f8; color: var(--mist);
+          font: 500 calc(var(--tile) * .27)/1 "Alegreya Sans", sans-serif; cursor: pointer; padding: 0; }
+  .node[data-cost="1"] { --rar: var(--r1); } .node[data-cost="2"] { --rar: var(--r2); }
+  .node[data-cost="3"] { --rar: var(--r3); } .node[data-cost="4"] { --rar: var(--r4); }
+  .node:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--r3); outline-offset: 2px; }
+  .node.route { background: var(--gold-soft); color: var(--ink); font-weight: 700; box-shadow: inset 0 0 0 2px var(--gold); }
+  .node.owned, .node.start { background: var(--ink); color: #fff; font-weight: 700; }
+  .node.start { border-bottom-color: var(--ink); cursor: default; border-radius: 50%; }
+  .node .step { position: absolute; top: -5px; right: -4px; min-width: 1.5em; padding: 1px 3px; border-radius: 9px; background: var(--gold); color: #fff;
+                font-size: calc(var(--tile) * .23); font-weight: 700; z-index: 1; }
+  #hint { min-height: 1.5em; margin: 8px 2px 0; color: var(--mist); }
+  #hint.warn { color: #a23a1e; font-weight: 500; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 2px 0; padding: 0; list-style: none; color: var(--mist); font-size: .95rem; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
+
+  .panel { display: grid; gap: 18px; max-width: 560px; }
+  .card { background: var(--cloud); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .ask { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; }
+  .ask label { font-weight: 500; }
+  #crystals { width: 5.5ch; font: 700 1.9rem Alegreya, serif; color: var(--ink); border: 0; border-bottom: 2px solid var(--ink); background: none; padding: 0 2px; }
+  #slider { width: 100%; accent-color: var(--gold); }
+  .goals { display: flex; gap: 6px; flex-wrap: wrap; }
+  .goals label { border: 1px solid var(--line); border-radius: 20px; padding: 4px 14px; cursor: pointer; font-weight: 500; }
+  .goals input { position: absolute; opacity: 0; }
+  .goals label:has(input:checked) { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .goals label:has(input:focus-visible) { outline: 3px solid var(--r3); outline-offset: 2px; }
+  .result { display: flex; flex-wrap: wrap; gap: 6px 28px; margin-bottom: 10px; }
+  .result div { font-size: .95rem; color: var(--mist); }
+  .result b { display: block; font: 700 1.7rem/1.1 Alegreya, serif; color: var(--ink); }
+  #gains { margin: 0 0 10px; color: var(--mist); }
+  #order { margin: 0; padding-left: 2.2em; max-height: 340px; overflow-y: auto; }
+  #order li { padding: 1px 0; }
+  #order li span { color: var(--mist); }
+  #order li.key { font-weight: 700; }
+  button.plain { font: inherit; color: var(--ink); background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
+  details summary { cursor: pointer; font: 700 1.25rem Alegreya, serif; }
+  .fields { display: grid; grid-template-columns: 1fr 7.5ch; gap: 6px 12px; margin-top: 10px; align-items: center; }
+  .fields input { font: inherit; width: 100%; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); }
+  .fields .sub { grid-column: 1 / -1; margin: 8px 0 0; color: var(--mist); }
+  pre { background: #eef1f8; border-radius: 8px; padding: 10px 12px; overflow-x: auto; font-size: .82rem; line-height: 1.5; margin: 0 0 .8rem; }
+  .how ul { margin: 0; padding-left: 1.2em; max-width: 68ch; }
+  .how li { margin-bottom: .35rem; }
+  .busy #board, .busy .result { opacity: .55; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ariel board route planner</h1>
+  <p>Say how many crystals you have. The gold nodes are the best ones to buy, numbered in the order to buy them.</p>
+</header>
+
+<main>
+  <section>
+    <div class="boardwrap"><div id="board" role="group" aria-label="Ariel Daevanion board"></div></div>
+    <p id="hint" aria-live="polite">Click a node you already bought to mark it as owned.</p>
+    <ul class="legend">
+      <li><i style="background:var(--gold-soft);box-shadow:inset 0 0 0 2px var(--gold)"></i>Buy this</li>
+      <li><i style="background:var(--ink)"></i>Already owned</li>
+      <li><i style="background:var(--r1)"></i>1 crystal</li>
+      <li><i style="background:var(--r2)"></i>2</li>
+      <li><i style="background:var(--r3)"></i>3</li>
+      <li><i style="background:var(--r4)"></i>4</li>
+    </ul>
+  </section>
+
+  <div class="panel">
+    <section class="card ask">
+      <label for="crystals">Crystals to spend</label>
+      <div><input id="crystals" type="number" min="0" max="232" value="30" inputmode="numeric"></div>
+      <span></span>
+      <input id="slider" type="range" min="0" max="232" value="30" aria-label="Crystals to spend">
+      <span id="goal-label">Goal</span>
+      <div class="goals" role="radiogroup" aria-labelledby="goal-label">
+        <label><input type="radio" name="goal" value="dps" checked>Damage</label>
+        <label><input type="radio" name="goal" value="tank">Survival</label>
+        <label><input type="radio" name="goal" value="balanced">Both</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="result">
+        <div><b id="r-dmg">–</b>damage dealt</div>
+        <div><b id="r-ehp">–</b>effective HP</div>
+        <div><b id="r-spent">–</b>crystals spent</div>
+      </div>
+      <p id="gains"></p>
+      <h2>Buy order</h2>
+      <ol id="order"></ol>
+      <p style="margin:12px 0 0"><button class="plain" id="clear-owned" type="button">Clear owned nodes</button></p>
+    </section>
+
+    <details class="card" id="stats">
+      <summary>Your stats</summary>
+      <p style="margin-top:8px">Without any Ariel nodes. The best route depends on these: 1.5% Damage Boost is worth more at 50% than at 200%.</p>
+      <div class="fields" id="fields"></div>
+      <p style="margin:12px 0 0"><button class="plain" id="reset-stats" type="button">Reset stats to defaults</button></p>
+    </details>
+
+    <details class="card how">
+      <summary>How it is calculated</summary>
+      <p style="margin-top:8px">NCsoft has not published a formula. This is the community-tested one; both numbers are against a PvE boss.</p>
+      <pre>damage = ( [ ((Attack × Weapon Boost) + Attack Bonus) × Attack Increase
+             + PvE Attack + Boss Attack ] × skill coefficient
+           + skill flat damage − target Defense × 0.1 )
+       × (1 + Damage Boost + PvE Boost + Boss Boost − target Tolerance)
+       × crit × double × front/back</pre>
+      <ul>
+        <li>PvE and Boss Attack are added after Attack Increase, so each point is worth 1 ÷ your Attack.</li>
+        <li>All Damage Boost types add into one bucket. +1.5% on a bucket of 180% is 1.5 ÷ 180 = +0.83% damage. The more you have, the less each node gives.</li>
+        <li>Damage Tolerance takes away from the boss's bucket in the same way.</li>
+        <li>Defense removes a flat 0.1 × Defense from every hit.</li>
+        <li>Critical Hit: about 1% chance per 15 points, up to the cap. A crit does 1.5× plus your Critical Damage Boost, minus the boss's resist. At the cap, crit nodes are worth nothing.</li>
+        <li>HP adds HP ÷ your HP. Critical Hit Resist and MP are worth nothing against bosses, because bosses do not crit.</li>
+        <li>Accuracy and Evasion count for nothing unless you give them a value in Your stats.</li>
+      </ul>
+      <p style="margin-top:.6rem">Effective HP is how much raw boss damage you survive: HP ÷ damage taken. Each node gets a value from these formulas; the planner then finds the connected group of nodes with the highest total value for your crystals.</p>
+    </details>
+  </div>
+</main>
+
+<script src="board.js"></script>
+<script src="planner.js"></script>
+<script>
+const P = Planner, $ = id => document.getElementById(id);
+const SHORT = { 'PvE Attack': 'Atk', 'Boss Attack': 'B.Atk', 'PvE Defense': 'Def', 'Boss Defense': 'B.Def', 'PvE Accuracy': 'Acc', 'PvE Evasion': 'Eva',
+  'PvE Damage Boost': 'Dmg', 'Boss Damage Boost': 'B.Dmg', 'PvE Damage Tolerance': 'Tol', 'Boss Damage Tolerance': 'B.Tol',
+  'Critical Hit': 'Crit', 'Critical Hit Resist': 'C.Res', HP: 'HP', MP: 'MP', Start: '' };
+const FIELDS = [
+  ['attack', 'Attack, total (after weapon boost and attack increase)'],
+  ['damage_boost_pct', 'Damage Boost % (generic + PvE + Boss)'],
+  ['crit_chance_pct', 'Crit chance against bosses %'],
+  ['crit_cap_pct', 'Crit chance cap %'],
+  ['crit_damage_boost_pct', 'Critical Damage Boost %'],
+  ['hp', 'HP'],
+  ['tolerance_pct', 'Damage Tolerance % (generic + PvE + Boss)'],
+  [null, 'Not shown in game. These are guesses; they mostly move the Survival route.'],
+  ['boss_hit', 'Boss hit size before your Defense'],
+  ['boss_damage_boost_pct', 'Boss Damage Boost %'],
+  ['boss_tolerance_pct', 'Boss Damage Tolerance %'],
+  ['boss_crit_dmg_resist_pct', 'Boss crit damage resist %'],
+  ['crit_pct_per_point', 'Crit chance % per Critical Hit point'],
+  ['accuracy_dps_pct_per_point', 'Damage % per Accuracy point (0 = never blocked)'],
+  ['evasion_pct_per_point', 'Damage avoided % per Evasion point (0 = ignore)'],
+];
+const describe = n => `${n.stat} +${n.value}${n.pct ? '%' : ''}`;
+
+// saved between visits; the page works without it
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem('ariel-planner') || '{}'); } catch (e) {}
+const state = {
+  crystals: Number.isInteger(saved.crystals) ? saved.crystals : 30,
+  goal: P.GOALS[saved.goal] ? saved.goal : 'dps',
+  build: Object.assign({}, P.DEFAULT_BUILD, saved.build),
+  owned: new Set((saved.owned || []).filter(i => P.NODES[i] && i !== P.START)),
+};
+if (!P.connected(state.owned)) state.owned.clear();
+const save = () => { try { localStorage.setItem('ariel-planner', JSON.stringify({ ...state, owned: [...state.owned] })); } catch (e) {} };
+
+const tiles = P.NODES.map((n, i) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'node' + (i === P.START ? ' start' : '');
+  b.style.gridColumn = n.x + 1; b.style.gridRow = n.y + 1;
+  b.dataset.cost = n.cost;
+  if (i === P.START) { b.disabled = true; b.setAttribute('aria-label', 'Start'); }
+  else {
+    const tell = () => hint(`${describe(n)}, ${n.cost} crystal${n.cost > 1 ? 's' : ''}`);
+    b.addEventListener('mouseenter', tell); b.addEventListener('focus', tell);
+    b.addEventListener('click', () => toggleOwned(i));
+  }
+  $('board').appendChild(b);
+  return b;
+});
+
+function hint(text, warn) { $('hint').textContent = text; $('hint').classList.toggle('warn', !!warn); }
+
+function toggleOwned(i) {
+  const next = new Set(state.owned);
+  const adding = !next.delete(i);
+  if (adding) next.add(i);
+  if (!P.connected(next)) return hint(adding ? 'Mark a node next to one you own first.' : 'Unmark the nodes further out first.', true);
+  state.owned = next; update();
+}
+
+let timer;
+function update() {
+  save();
+  document.body.classList.add('busy');
+  clearTimeout(timer);
+  timer = setTimeout(() => { render(); document.body.classList.remove('busy'); }, 30);  // let the page repaint first
+}
+
+function render() {
+  const plan = P.plan(state.crystals, state.build, state.goal, state.owned);
+  const step = new Map(plan.seq.map((i, k) => [i, k + 1]));
+  tiles.forEach((b, i) => {
+    if (i === P.START) return;
+    const n = P.NODES[i], owned = state.owned.has(i), s = step.get(i);
+    b.className = 'node' + (owned ? ' owned' : s ? ' route' : '');
+    b.textContent = SHORT[n.stat];
+    if (s) { const tag = document.createElement('span'); tag.className = 'step'; tag.textContent = s; b.appendChild(tag); }
+    b.setAttribute('aria-label', `${describe(n)}, ${n.cost} crystal${n.cost > 1 ? 's' : ''}` + (owned ? ', owned' : s ? `, buy as step ${s}` : ''));
+    b.setAttribute('aria-pressed', owned);
+  });
+  const spent = plan.seq.reduce((a, i) => a + P.NODES[i].cost, 0), pct = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%';
+  $('r-dmg').textContent = pct(plan.damage);
+  $('r-ehp').textContent = pct(plan.ehp);
+  $('r-spent').textContent = `${spent} of ${state.crystals}`;
+  const gain = P.totals(plan.seq);
+  $('gains').textContent = plan.seq.length
+    ? 'You gain: ' + Object.keys(gain).sort().map(k => `${k} +${+gain[k].toFixed(1)}${k.includes('Damage') ? '%' : ''}`).join(', ') + '.'
+    : state.crystals ? 'Nothing left on the board is worth buying for this goal.' : 'Enter how many crystals you have.';
+  let run = 0;
+  $('order').replaceChildren(...plan.seq.map(i => {
+    const n = P.NODES[i], li = document.createElement('li'), note = document.createElement('span');
+    run += n.cost;
+    li.textContent = describe(n) + ' ';
+    if (n.cost >= 3) li.className = 'key';
+    note.textContent = `column ${n.x + 1}, row ${n.y + 1} · ${n.cost}c, ${run} total`;
+    li.appendChild(note);
+    li.addEventListener('mouseenter', () => tiles[i].focus({ preventScroll: true }));
+    return li;
+  }));
+}
+
+function setCrystals(v) {
+  v = Math.max(0, Math.min(232, Math.round(+v) || 0));
+  state.crystals = v; $('crystals').value = v; $('slider').value = v; update();
+}
+$('crystals').addEventListener('change', e => setCrystals(e.target.value));
+$('slider').addEventListener('input', e => { $('crystals').value = e.target.value; });
+$('slider').addEventListener('change', e => setCrystals(e.target.value));
+document.querySelectorAll('input[name=goal]').forEach(r => {
+  r.checked = r.value === state.goal;
+  r.addEventListener('change', () => { state.goal = r.value; update(); });
+});
+$('clear-owned').addEventListener('click', () => { state.owned = new Set(); update(); });
+
+function buildFields() {
+  $('fields').replaceChildren(...FIELDS.flatMap(([k, label]) => {
+    if (!k) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = label; return [p]; }
+    const l = document.createElement('label'), inp = document.createElement('input');
+    l.textContent = label; l.htmlFor = inp.id = 'f-' + k;
+    inp.type = 'number'; inp.step = 'any'; inp.min = 0; inp.value = +state.build[k].toFixed(4);
+    inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value);
+      // attack, hp and boss hit are divisors: keep them above zero
+      if (!(v >= 0) || (v === 0 && ['attack', 'hp', 'boss_hit'].includes(k))) { inp.value = +state.build[k].toFixed(4); return; }
+      state.build[k] = v; update();
+    });
+    return [l, inp];
+  }));
+}
+$('reset-stats').addEventListener('click', () => { state.build = Object.assign({}, P.DEFAULT_BUILD); buildFields(); update(); });
+
+buildFields();
+setCrystals(state.crystals);
+</script>
+</body>
+</html>
