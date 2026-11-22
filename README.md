@@ -21,11 +21,11 @@ You can also just double-click `index.html`; everything works that way except lo
 - `index.html` — the page
 - `serve.py` — local server; relays character lookups to the official API
 - `compose.yaml` — runs `serve.py` in a container
-- `worker.js`, `deploy.sh` — the same relay as a Cloudflare Pages worker, and the script that publishes the site
+- `worker.js` — the same relay as a Cloudflare Worker, for the online version
 
 ### Online
 
-Published at https://daevanion-planner.pages.dev. Every push to `main` republishes it through GitHub Actions (`.github/workflows/deploy.yml`), after the planner's self-test passes. `./deploy.sh` in `daevanion/` does the same by hand: it copies the seven site files into `dist/`, adds `worker.js` as the relay, and uploads that folder to Cloudflare Pages. Nothing else in the repo is uploaded.
+Published at https://daevanion.walior.it as a Cloudflare Worker. Cloudflare Workers Builds redeploys it on every push to `main`, running `sh build.sh && npx wrangler deploy` from the repository root. `build.sh` runs the planner's self-test and copies the seven site files into `dist/`; `wrangler.toml` points the Worker at that folder and at `daevanion/worker.js`, the relay. Nothing else in the repo is published.
 
 ### Load your character
 

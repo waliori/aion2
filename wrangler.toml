@@ -1,0 +1,14 @@
+# One Worker for the repo. Cloudflare Workers Builds deploys it on every push to main, from the repository root:
+#   sh build.sh && npx wrangler deploy
+# dist/ holds the planner's files; daevanion/worker.js answers the character lookup relay at /api.
+# The workers.dev address is off; the site lives on the custom domain.
+name = "daevanion-planner"
+main = "daevanion/worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+preview_urls = false
+routes = [{ pattern = "daevanion.walior.it", custom_domain = true }]
+
+[assets]
+directory = "dist"
+binding = "ASSETS"
