@@ -21,6 +21,11 @@ You can also just double-click `index.html`; everything works that way except lo
 - `index.html` — the page
 - `serve.py` — local server; relays character lookups to the official API
 - `compose.yaml` — runs `serve.py` in a container
+- `worker.js`, `deploy.sh` — the same relay as a Cloudflare Pages worker, and the script that publishes the site
+
+### Online
+
+Published at https://daevanion-planner.pages.dev. `./deploy.sh` in `daevanion/` republishes it: it copies the seven site files into `dist/`, adds `worker.js` as the relay, and uploads that folder to Cloudflare Pages. Nothing else in the repo is uploaded.
 
 ### Load your character
 
