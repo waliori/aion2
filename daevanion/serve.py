@@ -14,6 +14,10 @@ PORT = 8787
 
 
 class Handler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")  # the files change under the server; never serve a stale page
+        super().end_headers()
+
     def do_GET(self):
         if not self.path.startswith("/api?"):
             return super().do_GET()

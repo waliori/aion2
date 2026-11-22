@@ -6,7 +6,13 @@
   const API = 'https://aion2.plaync.com/api/character';
   const SEARCH = 'https://api-search.plaync.com/aion2global/search/v2/character';
   const REGIONS = { eu: 'Europe', nae: 'North America East', naw: 'North America West', la: 'South America', as: 'Asia' };
-  const ARIEL = 85, BOARDS = [81, 82, 83, 84, 85, 86];
+  // Board ids are different for every class (Gladiator 11 to 16, Chanter 81 to 86, ...), so they are read
+  // from the character, never hard-coded. Ariel is the fifth board.
+  const boardList = info => ((info.daevanion && info.daevanion.boardList) || []).map(b => ({ id: b.id, ariel: b.name === 'Ariel' || b.id % 10 === 5 }));
+  const openAriel = (info, boards) => {
+    const a = boardList(info).find(b => b.ariel);
+    return ((a && boards[a.id] && boards[a.id].nodeList) || []).filter(n => n.open && n.type === 'Stat').map(n => [n.col - 1, n.row - 1]);
+  };
   const num = v => parseFloat(String(v).replace(/[+,]/g, ''));
 
   // -> { flat: {name: sum}, pct: {name: sum}, weapon: average weapon Attack }
@@ -32,7 +38,7 @@
       }
     }
     for (const t of (info.title && info.title.titleList) || []) for (const s of [...(t.equipStatList || []), ...(t.statList || [])]) addDesc(s.desc);
-    for (const id of BOARDS) if (id !== ARIEL) for (const s of (boards[id] && boards[id].openStatEffectList) || []) addDesc(s.desc);
+    for (const b of boardList(info)) if (!b.ariel) for (const s of (boards[b.id] && boards[b.id].openStatEffectList) || []) addDesc(s.desc);
     for (const s of (info.stat && info.stat.statList) || []) for (const d of s.statSecondList || []) addDesc(d);  // "Attack increase +3.2%"
     return out;
   }
@@ -51,8 +57,7 @@
       crit_hit: Math.round(f('Critical Hit') * (1 + p('Critical Hit increase') / 100)),
       accuracy: Math.round((f('Accuracy') + f('Accuracy Bonus')) * (1 + p('Accuracy increase') / 100) + f('PvE Accuracy')),
     };
-    const owned = ((boards[ARIEL] && boards[ARIEL].nodeList) || []).filter(n => n.open && n.type === 'Stat').map(n => [n.col - 1, n.row - 1]);
-    return { build, owned };
+    return { build, owned: openAriel(info, boards) };
   }
 
   async function get(url) {
@@ -78,10 +83,19 @@
         get(`${API}/equipment/item?id=${it.id}&enchantLevel=${it.enchantLevel}&${q}&slotPos=${it.slotPos}`))));
     }
     onProgress('Reading Daevanion boards…');
-    for (const [k, d] of (await Promise.all(BOARDS.map(id => get(`${API}/daevanion/detail?${q}&boardId=${id}`)))).entries()) boards[BOARDS[k]] = d;
+    const ids = boardList(info).map(b => b.id);
+    for (const [k, d] of (await Promise.all(ids.map(id => get(`${API}/daevanion/detail?${q}&boardId=${id}`)))).entries()) boards[ids[k]] = d;
     return { info, items, boards };
   }
 
-  const api = { REGIONS, search, load, toBuild, collect };
+  // just the open Ariel nodes of a character, as [x, y]: two calls, for comparing boards
+  async function loadBoard(hit) {
+    const q = `lang=en-US&characterId=${encodeURIComponent(hit.characterId)}&serverId=${hit.serverId}&region=${hit.region}`;
+    const info = await get(`${API}/info?${q}`), a = boardList(info).find(b => b.ariel);
+    if (!a) return [];
+    return openAriel(info, { [a.id]: await get(`${API}/daevanion/detail?${q}&boardId=${a.id}`) });
+  }
+
+  const api = { REGIONS, search, load, loadBoard, toBuild, collect };
   if (typeof module !== 'undefined') module.exports = api; else root.Character = api;
 })(this);

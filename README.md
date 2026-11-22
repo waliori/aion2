@@ -37,14 +37,12 @@ What that cannot see: pets, wings, skill passives, buffs and class base stats. S
 
 ### What the page shows
 
-- **The board**: nodes to buy in apricot with their buying step, nodes you own in periwinkle.
-- **What this plan adds** and **Your board now**: damage dealt and effective HP for the plan, and the same figures for the nodes you already own.
-- **Why this route**, the calculation, all from your own numbers:
-  - one hit of a 100% skill (normal, critical, average, crit chance, hits blocked) on an empty board, on your board now, and after the plan;
-  - the same route against each encounter;
-  - what one node of each kind is worth to you, with the arithmetic;
-  - the plan against two other ways of spending the same crystals, and against resetting your board and re-planning everything;
-  - the buy order with the running gain.
+A settings strip (your character, crystals, goal, encounter), the board, and four tabs beside it:
+
+- **Plan**: what the plan adds (damage dealt, effective HP, crystals spent), the same figures for the board you own now, and the buy order with the running gain.
+- **Why**: the calculation, all from your own numbers. One average hit on an empty board, on your board now and after the plan; what one node of each kind is worth per crystal, with the arithmetic; the plan against other ways of spending the same crystals; and the same route against every encounter.
+- **Compare**: two boards side by side with the difference in every stat. Each side can be your board now, this plan, another plan with its own crystals, goal and encounter, or another player's Ariel board loaded from the game. Both sides are valued with your stats.
+- **My stats**: your numbers, the custom encounter's boss numbers, and how it is calculated.
 
 ### Encounters
 

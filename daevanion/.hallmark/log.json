@@ -3,6 +3,29 @@
   "mode": "redesign",
   "depth": "full",
   "scope": "app",
+  "theme": "carnival",
+  "shape": "app screen",
+  "axes": "light/display-heavy/chromatic-yellow",
+  "nav": "accent band, settings strip, four tabs",
+  "signature": "the Ariel board as a print: route turquoise, owned coral",
+  "sections": [
+   "settings",
+   "board",
+   "plan",
+   "why",
+   "compare",
+   "stats"
+  ],
+  "waived": [
+   "39b"
+  ],
+  "prompt": "Ariel board route planner, tabs and compare",
+  "date": "2026-11-22"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
   "theme": "dusk",
   "shape": "app screen",
   "axes": "dark/grotesk-sans/cool",
