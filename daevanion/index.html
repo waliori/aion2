@@ -61,6 +61,13 @@
   #order li { padding: 1px 0; }
   #order li span { color: var(--mist); }
   #order li.key { font-weight: 700; }
+  .charform { display: flex; gap: 8px; flex-wrap: wrap; }
+  .charform select, .charform input { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
+  .charform input { flex: 1; min-width: 12ch; }
+  #char-hits { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; max-height: 190px; overflow-y: auto; }
+  #char-hits button { width: 100%; text-align: left; }
+  #char-status { margin: 8px 0 0; color: var(--mist); }
+  #char-status.warn { color: #a23a1e; }
   button.plain { font: inherit; color: var(--ink); background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 12px; cursor: pointer; }
   details summary { cursor: pointer; font: 700 1.25rem Alegreya, serif; }
   .fields { display: grid; grid-template-columns: 1fr 7.5ch; gap: 6px 12px; margin-top: 10px; align-items: center; }
@@ -93,6 +100,17 @@
   </section>
 
   <div class="panel">
+    <section class="card">
+      <h2>Load your character</h2>
+      <form id="char-form" class="charform">
+        <select id="char-region" aria-label="Region"></select>
+        <input id="char-name" type="search" placeholder="Character name" aria-label="Character name" required minlength="2" autocomplete="off">
+        <button class="plain" type="submit">Search</button>
+      </form>
+      <ul id="char-hits"></ul>
+      <p id="char-status" aria-live="polite"></p>
+    </section>
+
     <section class="card ask">
       <label for="crystals">Crystals to spend</label>
       <div><input id="crystals" type="number" min="0" max="232" value="30" inputmode="numeric"></div>
@@ -149,6 +167,7 @@
 
 <script src="board.js"></script>
 <script src="planner.js"></script>
+<script src="character.js"></script>
 <script>
 const P = Planner, $ = id => document.getElementById(id);
 const SHORT = { 'PvE Attack': 'Atk', 'Boss Attack': 'B.Atk', 'PvE Defense': 'Def', 'Boss Defense': 'B.Def', 'PvE Accuracy': 'Acc', 'PvE Evasion': 'Eva',
@@ -280,6 +299,45 @@ function buildFields() {
   }));
 }
 $('reset-stats').addEventListener('click', () => { state.build = Object.assign({}, P.DEFAULT_BUILD); buildFields(); update(); });
+
+// --- load a character from the official API (needs serve.py: the API refuses direct browser calls) ---
+const C = Character, charStatus = (text, warn) => { $('char-status').textContent = text; $('char-status').classList.toggle('warn', !!warn); };
+$('char-region').replaceChildren(...Object.entries(C.REGIONS).map(([v, label]) => new Option(label, v)));
+if (location.protocol === 'file:') {
+  [...$('char-form').elements].forEach(el => { el.disabled = true; });
+  charStatus('To load a character, run "python3 serve.py" in this folder and open http://localhost:8787. Everything else works without it.');
+}
+$('char-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('char-hits').replaceChildren(); charStatus('Searching…');
+  try {
+    const hits = await C.search($('char-name').value.trim(), $('char-region').value);
+    charStatus(hits.length ? 'Pick your character.' : 'No character with that name in this region.');
+    $('char-hits').replaceChildren(...hits.map(h => {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.className = 'plain'; b.textContent = `${h.name}, ${h.serverName}, level ${h.level}`;
+      b.addEventListener('click', () => loadCharacter(h));
+      li.appendChild(b); return li;
+    }));
+  } catch (err) { charStatus(err.message, true); }
+});
+async function loadCharacter(hit) {
+  $('char-hits').replaceChildren();
+  try {
+    const d = await C.load(hit, charStatus);
+    const { build, owned } = C.toBuild(d.info, d.items, d.boards, state.build.crit_pct_per_point);
+    if (!(build.attack > 0)) throw new Error('This character has no weapon equipped, so there is nothing to calculate from.');
+    Object.assign(state.build, build);
+    const set = new Set(owned.map(([x, y]) => P.POS.get(x + ',' + y)).filter(i => i !== undefined));
+    if (P.connected(set)) state.owned = set;
+    buildFields(); update();
+    $('stats').open = true;
+    charStatus(`Loaded ${hit.name}: Attack ${build.attack}, Damage Boost ${build.damage_boost_pct}%, Damage Tolerance ${build.tolerance_pct}%, `
+      + `Critical Damage Boost ${build.crit_damage_boost_pct}%, crit chance ${build.crit_chance_pct}%. ${set.size} Ariel node${set.size === 1 ? '' : 's'} marked as owned. `
+      + 'These are added up from gear, titles and boards. Pets, wings, skill passives and base stats are not in the data, and HP is not available: '
+      + 'check Attack, crit chance and HP against your stat sheet in Your stats.');
+  } catch (err) { charStatus(err.message, true); }
+}
 
 buildFields();
 setCrystals(state.crystals);

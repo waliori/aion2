@@ -1,0 +1,13 @@
+# docker compose up -d   ->  http://localhost:8787
+# The folder is mounted, so edits to the page show up on reload; no rebuild.
+services:
+  ariel-planner:
+    image: python:3.13-alpine
+    command: python -u /app/serve.py
+    environment:
+      BIND: 0.0.0.0
+    volumes:
+      - .:/app:ro
+    ports:
+      - "127.0.0.1:8787:8787"   # this machine only
+    restart: unless-stopped

@@ -12,13 +12,13 @@
   // Your character WITHOUT any Ariel nodes. Every number changes which route is best:
   // the board's stats have diminishing returns against what you already have.
   const DEFAULT_BUILD = {
-    attack: 5000,               // (Attack x Weapon Dmg Boost + Attack Bonus) x Attack Increase + PvE/Boss Attack
-    damage_boost_pct: 80,       // Damage Boost + PvE Damage Boost + Boss Damage Boost (one additive bucket)
-    crit_chance_pct: 40,        // effective crit chance against the boss
+    attack: 2000,               // (Attack x Weapon Dmg Boost + Attack Bonus) x Attack Increase + PvE/Boss Attack
+    damage_boost_pct: 15,       // Damage Boost + PvE Damage Boost + Boss Damage Boost (one additive bucket)
+    crit_chance_pct: 30,        // effective crit chance against the boss
     crit_cap_pct: 50,           // Global cap (KR guides say 80)
-    crit_damage_boost_pct: 30,  // on top of the base 1.5x
-    hp: 30000,
-    tolerance_pct: 20,          // your Damage Tolerance + PvE + Boss Damage Tolerance
+    crit_damage_boost_pct: 5,   // on top of the base 1.5x
+    hp: 15000,
+    tolerance_pct: 15,          // your Damage Tolerance + PvE + Boss Damage Tolerance
     // --- not readable in game: guesses ---
     boss_tolerance_pct: 0,      // boss's Damage Tolerance, subtracted from your boost bucket
     boss_crit_dmg_resist_pct: 25,
@@ -167,7 +167,9 @@
   }
 
   function selftest() {
-    const assert = require('assert'), b = DEFAULT_BUILD, close = (x, y) => assert(Math.abs(x - y) < 1e-9, x + ' != ' + y);
+    const assert = require('assert'), close = (x, y) => assert(Math.abs(x - y) < 1e-9, x + ' != ' + y);
+    // fixed numbers so the checks below do not move when the defaults do
+    const b = Object.assign({}, DEFAULT_BUILD, { attack: 5000, damage_boost_pct: 80, crit_chance_pct: 40, crit_damage_boost_pct: 30, hp: 30000, tolerance_pct: 20 });
     const all = NODES.map((_, i) => i), spent = c => [...c].reduce((a, i) => a + NODES[i].cost, 0);
     assert(N === 153 && spent(all) === 232 && BOARD.total_cost === 232);
     assert(connected(all), 'board is not connected under 4-neighbour adjacency');

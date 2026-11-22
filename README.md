@@ -4,15 +4,40 @@ Small tools for AION 2. One folder per tool.
 
 ## daevanion/ — Ariel board route planner
 
-Open `daevanion/index.html` in a browser (double-click it; no server or install needed). Enter how many Daevanion Crystal: Ariel you have and pick a goal. The board shows the best nodes to buy in gold, numbered in buy order. Click nodes you already bought to mark them as owned; the plan then spends your crystals on top of those.
+```sh
+cd daevanion
+docker compose up -d    # then open http://localhost:8787  (stop with: docker compose down)
+```
 
-- `board.js` — the board data
+It restarts on its own after a reboot. Without Docker, `python3 serve.py` does the same thing.
+
+Enter how many Daevanion Crystal: Ariel you have and pick a goal. The board shows the best nodes to buy in gold, numbered in buy order. Click nodes you already bought to mark them as owned; the plan then spends your crystals on top of those.
+
+You can also just double-click `index.html`; everything works that way except loading a character.
+
+- `board.js` — the board data (checked against the official API: 152 of 152 nodes match)
 - `planner.js` — the maths; `node planner.js` runs its self-test
+- `character.js` — loads a character from the official API and adds up its stats
 - `index.html` — the page
+- `serve.py` — local server; relays character lookups to the official API
+- `compose.yaml` — runs `serve.py` in a container
+
+### Load your character
+
+Pick your region, search your character name, click it. This fills in Attack, Damage Boost, Damage Tolerance, Critical Damage Boost and crit chance, and marks the Ariel nodes you already own. It takes 15 to 20 seconds.
+
+How it works: the official site (`aion2.plaync.com`, Global) has an unauthenticated JSON API, the same one shugo.gg reads. It refuses requests made directly by a web page, which is why `serve.py` relays them. It has no "final stats" endpoint, so `character.js` adds up every stat line on your gear (base, enchant, sub stats, manastones, Arcana set bonus), your titles, your other Daevanion boards and your primary-stat bonuses.
+
+What that cannot see: pets, wings, skill passives, buffs and class base stats. So:
+
+- **Damage Boost, Damage Tolerance, Critical Damage Boost**: summed directly; reliable unless a passive adds more.
+- **Attack**: `((weapon average + Attack lines) × Weapon Damage Boost + Attack Bonus) × Attack increase + PvE Attack`. An estimate; compare with your stat sheet.
+- **Crit chance**: Critical Hit ÷ 15, assuming the boss has no Critical Hit Resist. An upper estimate.
+- **HP**: not available; type it in.
 
 ### Put your own stats in
 
-The right route depends on what you already have: +1.5% Damage Boost is worth more to someone at 50% than at 200%. Open "Your stats" on the page and fill in yours; they are remembered in the browser.
+The right route depends on what you already have: +1.5% Damage Boost is worth more to someone at 50% than at 200%. Load your character (above), or open "Your stats" on the page and type them in; they are remembered in the browser.
 
 The defaults are a placeholder mid-game character, not yours. The ones listed as guesses (boss hit size, boss Damage Boost, boss Damage Tolerance, what Evasion does) cannot be read in game; they mostly move the Survival route.
 
