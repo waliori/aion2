@@ -174,6 +174,10 @@ const FR = {
   'Evasion counts for nothing unless you give it a value above.': 'L’Esquive ne compte pas, sauf si vous lui donnez une valeur ci-dessus.',
   'Effective HP is how much raw boss damage you survive: HP ÷ damage taken.': 'Les PV effectifs, c’est la quantité de dégâts bruts de boss à laquelle vous survivez : PV ÷ dégâts subis.',
 
+  // the formula block (a <pre>: matched on its whole text)
+  "damage = ( [ ((Attack × Weapon Boost) + Attack Bonus) × Attack Increase\n             + PvE Attack + Boss Attack ] × skill coefficient\n           + skill flat damage − target Defense × 0.1 )\n       × (1 + Damage Boost + PvE Boost + Boss Boost − target Tolerance)\n       × crit × double × front/back":
+    "dégâts = ( [ ((ATQ × Boost d’arme) + ATQ supplémentaire) × Augmentation de l’ATQ\n             + ATQ JcE + ATQ contre les boss ] × coefficient de compétence\n           + dégâts fixes de compétence − DÉF de la cible × 0,1 )\n       × (1 + Boost de DGT + Boost JcE + Boost boss − Tolérance de la cible)\n       × critique × double × face/dos",
+
   // --- loading characters ---
   Europe: 'Europe', 'North America East': 'Amérique du Nord Est', 'North America West': 'Amérique du Nord Ouest', 'South America': 'Amérique du Sud', Asia: 'Asie',
   'To load a character, run “docker compose up -d” in this folder and open http://localhost:8787. Everything else works without it.':
@@ -217,6 +221,7 @@ function translatePage(doc) {
     const key = n.nodeValue.replace(/\s+/g, ' ').trim();
     if (FR[key]) n.nodeValue = n.nodeValue.replace(n.nodeValue.trim(), FR[key]);
   }
+  for (const p of doc.querySelectorAll('pre')) if (FR[p.textContent]) p.textContent = FR[p.textContent];
   for (const e of doc.querySelectorAll('[placeholder], [aria-label]')) for (const a of ['placeholder', 'aria-label']) {
     const v = e.getAttribute(a);
     if (v && FR[v]) e.setAttribute(a, FR[v]);
@@ -232,6 +237,7 @@ if (typeof module !== 'undefined' && require.main === module) {
   const html = read('index.html'), cut = html.indexOf('<script>'), keys = new Set();
   const unescape = s => s.replace(/\\'/g, "'");
   // texts between tags, and the attributes shown or read aloud
+  for (const m of html.matchAll(/<pre>([\s\S]*?)<\/pre>/g)) keys.add(m[1]);
   const body = html.slice(html.indexOf('<body'), cut).replace(/<pre>[\s\S]*?<\/pre>/g, '').replace(/<button[^>]*data-lang[\s\S]*?<\/button>/g, '');
   for (const m of body.matchAll(/>([^<>]+)</g)) { const t = m[1].replace(/\s+/g, ' ').trim(); if (t && !/^[0-9%+.]*$/.test(t)) keys.add(t); }
   for (const m of body.matchAll(/(?:placeholder|aria-label)="([^"]+)"/g)) keys.add(m[1]);
