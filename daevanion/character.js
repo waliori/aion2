@@ -57,7 +57,10 @@
       crit_hit: Math.round(f('Critical Hit') * (1 + p('Critical Hit increase') / 100)),
       accuracy: Math.round((f('Accuracy') + f('Accuracy Bonus')) * (1 + p('Accuracy increase') / 100) + f('PvE Accuracy')),
     };
-    return { build, owned: openAriel(info, boards) };
+    // the pieces of the Attack figure, so the page can show its working
+    const parts = { attack: build.attack, weapon: Math.round(weapon), lines: f('Attack'), weaponBoost: p('Weapon Damage Boost'), bonus: f('Attack Bonus'),
+      increase: p('Attack increase'), flat: f('PvE Attack') + f('Boss Attack') };
+    return { build, parts, owned: openAriel(info, boards) };
   }
 
   async function get(url) {

@@ -13,6 +13,10 @@
 <header class="band"><div class="container">
   <h1>Ariel board route planner.</h1>
   <p>Turquoise is what to buy, in order. Red is what you own.</p>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="en" lang="en">English</button>
+    <button type="button" data-lang="fr" lang="fr">Français</button>
+  </div>
 </div></header>
 
 <main class="container">
@@ -210,6 +214,13 @@
            + skill flat damage − target Defense × 0.1 )
        × (1 + Damage Boost + PvE Boost + Boss Boost − target Tolerance)
        × crit × double × front/back</pre>
+          <h3>With your numbers.</h3>
+          <p class="note" id="calc-note"></p>
+          <div class="scroll"><table>
+            <thead><tr><th>Step</th><th>Working</th><th class="num">Result</th></tr></thead>
+            <tbody id="calc"></tbody>
+          </table></div>
+          <p class="note">This is one hit of a skill that does 100% of your Attack. For a 250% skill, multiply the Attack line by 2.5 before the boss’s Defense comes off. Double hits and front or back bonuses multiply on top; they are not on this board, so they are left at 1.</p>
           <ul>
             <li>PvE and Boss Attack are added after Attack Increase, so each point is worth 1 ÷ your Attack.</li>
             <li>All Damage Boost types add into one bucket. +1.5% on a bucket of 180% is 1.5 ÷ 180 = +0.83% damage. The more you have, the less each node gives.</li>
@@ -227,14 +238,20 @@
   </div>
 </main>
 
+<script src="i18n.js"></script>
 <script src="board.js"></script>
 <script src="planner.js"></script>
 <script src="character.js"></script>
 <script>
 const P = Planner, C = Character, $ = id => document.getElementById(id);
-const SHORT = { 'PvE Attack': 'Atk', 'Boss Attack': 'B.Atk', 'PvE Defense': 'Def', 'Boss Defense': 'B.Def', 'PvE Accuracy': 'Acc', 'PvE Evasion': 'Eva',
-  'PvE Damage Boost': 'Dmg', 'Boss Damage Boost': 'B.Dmg', 'PvE Damage Tolerance': 'Tol', 'Boss Damage Tolerance': 'B.Tol',
-  'Critical Hit': 'Crit', 'Critical Hit Resist': 'C.Res', HP: 'HP', MP: 'MP', Start: '' };
+const SHORT = LANG === 'fr'
+  ? { 'PvE Attack': 'ATQ', 'Boss Attack': 'ATQ.B', 'PvE Defense': 'DÉF', 'Boss Defense': 'DÉF.B', 'PvE Accuracy': 'Préc', 'PvE Evasion': 'Esq',
+    'PvE Damage Boost': 'DGT', 'Boss Damage Boost': 'DGT.B', 'PvE Damage Tolerance': 'Tol', 'Boss Damage Tolerance': 'Tol.B',
+    'Critical Hit': 'CRIT', 'Critical Hit Resist': 'R.CRIT', HP: 'PV', MP: 'PM', Start: '' }
+  : { 'PvE Attack': 'Atk', 'Boss Attack': 'B.Atk', 'PvE Defense': 'Def', 'Boss Defense': 'B.Def', 'PvE Accuracy': 'Acc', 'PvE Evasion': 'Eva',
+    'PvE Damage Boost': 'Dmg', 'Boss Damage Boost': 'B.Dmg', 'PvE Damage Tolerance': 'Tol', 'Boss Damage Tolerance': 'B.Tol',
+    'Critical Hit': 'Crit', 'Critical Hit Resist': 'C.Res', HP: 'HP', MP: 'MP', Start: '' };
+// labels are English keys; T() turns them into the page's language where they are shown
 const FIELDS = [
   ['attack', 'Attack, total (after weapon boost and attack increase)'],
   ['damage_boost_pct', 'Damage Boost % (generic + PvE + Boss)'],
@@ -259,10 +276,13 @@ const CUSTOM_FIELDS = [['acc', 'Accuracy where parries stop (0 = never blocked)'
   ['boss_tolerance_pct', 'Boss Damage Tolerance %'], ['boss_crit_dmg_resist_pct', 'Boss crit damage resist %'], ['boss_defense', 'Boss Defense'],
   ['boss_hit', 'Boss hit size before your Defense'], ['boss_damage_boost_pct', 'Boss Damage Boost %']];
 const SIDES = { mine: 'My board now', plan: 'This plan', other: 'Another plan', player: 'Another player' };
-const describe = n => `${n.stat} +${n.value}${n.pct ? '%' : ''}`;
-const signed = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%', rate = v => (v * 100).toFixed(1) + '%';
-const int = v => Math.round(v).toLocaleString('en-US'), cr = n => `${n} crystal${n === 1 ? '' : 's'}`;
-const gainsText = t => Object.keys(t).sort().map(k => `${k} +${+t[k].toFixed(1)}${k.includes('Damage') ? '%' : ''}`).join(', ');
+const GOAL_NAMES = { dps: 'Damage', tank: 'Survival', balanced: 'Both' };
+const fx = (v, d) => dec((+v).toFixed(d));
+const describe = n => `${T(n.stat)} +${dec(n.value)}${n.pct ? '%' : ''}`;
+const signed = v => (v >= 0 ? '+' : '') + fx(v * 100, 2) + '%', rate = v => fx(v * 100, 1) + '%';
+const int = v => Math.round(v).toLocaleString(LOCALE), pc = v => dec(+(+v).toFixed(2)) + '%', plain = v => dec(+v.toFixed(1));
+const cr = n => T(n === 1 ? '{n} crystal' : '{n} crystals', { n }), nodesText = n => T(n === 1 ? '{n} node' : '{n} nodes', { n });
+const gainsText = t => Object.keys(t).sort().map(k => `${T(k)} +${plain(t[k])}${k.includes('Damage') ? '%' : ''}`).join(', ');
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const bar = (v, lead) => { const b = el('span', 'bar' + (v > 0.002 ? '' : ' zero') + (lead ? ' lead' : '')); b.style.setProperty('--v', Math.max(0, Math.min(1, v)).toFixed(3)); return b; };
 // table rows: each cell is text, a Node, or [content, class]; numbers right-align
@@ -277,6 +297,14 @@ const rows = (id, list) => $(id).replaceChildren(...list.map(({ cells, cls, hove
   return tr;
 }));
 
+// language: the static text of the page is translated in place, then the switch in the band
+translatePage(document);
+document.querySelectorAll('tbody').forEach(tb => { tb.dataset.empty = T('Nothing to show yet.'); });
+document.querySelectorAll('[data-lang]').forEach(b => {
+  b.setAttribute('aria-pressed', b.dataset.lang === LANG);
+  b.addEventListener('click', () => { try { localStorage.setItem('ariel-lang', b.dataset.lang); } catch (e) {} location.reload(); });
+});
+
 // saved between visits; the page works without it
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem('ariel-planner-2') || '{}'); } catch (e) {}
@@ -287,6 +315,7 @@ const state = {
   custom: Object.assign({ acc: 1000, crit: 1500 }, saved.custom),  // boss_* keys are filled from the build below
   build: Object.assign({}, P.DEFAULT_BUILD, saved.build),
   owned: new Set((saved.owned || []).filter(i => P.NODES[i] && i !== P.START)),
+  parts: saved.parts || null,  // how the loaded character's Attack was added up
   cmp: Object.assign({ a: 'mine', b: 'plan', other: { crystals: 60, goal: 'tank', target: 'open' }, player: { name: '', nodes: [] } }, saved.cmp),
 };
 if (!P.connected(state.owned)) state.owned.clear();
@@ -310,7 +339,7 @@ window.addEventListener('hashchange', () => showTab(location.hash.slice(1)));
 const tiles = P.NODES.map((n, i) => {
   const b = el('button', 'node' + (i === P.START ? ' start' : ''));
   b.type = 'button'; b.style.gridColumn = n.x + 1; b.style.gridRow = n.y + 1;
-  if (i === P.START) { b.disabled = true; b.setAttribute('aria-label', 'Start'); b.textContent = 'Start'; }
+  if (i === P.START) { b.disabled = true; b.setAttribute('aria-label', T('Start')); b.textContent = T('Start'); }
   else {
     const tell = () => hint(`${describe(n)}, ${cr(n.cost)}`);
     b.addEventListener('mouseenter', tell); b.addEventListener('focus', tell);
@@ -326,7 +355,7 @@ function toggleOwned(i) {
   const next = new Set(state.owned);
   const adding = !next.delete(i);
   if (adding) next.add(i);
-  if (!P.connected(next)) return hint(adding ? 'Mark a node next to one you own first.' : 'Unmark the nodes further out first.', true);
+  if (!P.connected(next)) return hint(T(adding ? 'Mark a node next to one you own first.' : 'Unmark the nodes further out first.'), true);
   state.owned = next; update();
 }
 
@@ -340,7 +369,7 @@ function update() {
 
 let otherCache = { key: '', set: null };
 function render() {
-  const b = state.build, t = targetById(state.target), mix = P.GOALS[state.goal];
+  const b = state.build, t = targetById(state.target), mix = P.GOALS[state.goal], tName = T(t.name);
   const plan = P.plan(state.crystals, b, state.goal, state.owned, t);
   const sNow = P.totals(state.owned), sAfter = P.totals(plan.chosen);
   const sc = s => P.score(s, b, t), vs = (a, base) => a / base - 1;
@@ -359,22 +388,22 @@ function render() {
     const pips = el('span', 'pips');  // cost: one tick per crystal
     for (let k = 0; k < n.cost; k++) pips.appendChild(el('i'));
     tile.appendChild(pips);
-    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (owned ? ', owned' : s ? `, buy as step ${s}` : ''));
+    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (owned ? T(', owned') : s ? T(', buy as step {s}', { s }) : ''));
     tile.setAttribute('aria-pressed', owned);
   });
-  $('target-note').textContent = t.note;
+  $('target-note').textContent = T(t.note);
 
   // --- Plan ---
-  $('r-dmg').textContent = signed(vs(d1, d0)); $('r-ehp').textContent = signed(vs(e1, e0)); $('r-spent').textContent = `${spent} of ${state.crystals}`;
-  $('gains').textContent = plan.seq.length ? 'You gain: ' + gainsText(P.totals(plan.seq)) + '.'
-    : state.crystals ? 'Nothing left on the board is worth buying for this goal.' : 'Enter how many crystals you have.';
+  $('r-dmg').textContent = signed(vs(d1, d0)); $('r-ehp').textContent = signed(vs(e1, e0)); $('r-spent').textContent = T('{a} of {b}', { a: spent, b: state.crystals });
+  $('gains').textContent = plan.seq.length ? T('You gain: {list}.', { list: gainsText(P.totals(plan.seq)) })
+    : T(state.crystals ? 'Nothing left on the board is worth buying for this goal.' : 'Enter how many crystals you have.');
   $('n-dmg').textContent = signed(d0 - 1); $('n-ehp').textContent = signed(e0 - 1); $('n-spent').textContent = ownedCost;
   $('now-figures').hidden = !state.owned.size;
   $('clear-owned').disabled = !state.owned.size;  // always visible; nothing to clear when you own no nodes
   $('owned-note').textContent = state.owned.size
-    ? `${state.owned.size} node${state.owned.size === 1 ? '' : 's'} owned, compared with an empty board: ${gainsText(sNow)}. The plan keeps them and adds ${cr(state.crystals)} on top.`
-    : 'No owned nodes yet. Load your character, or click the nodes you have bought.';
-  $('clear-owned').textContent = state.owned.size ? `Clear owned nodes and get ${cr(ownedCost)} back` : 'Clear owned nodes';
+    ? T('{nodes} owned, compared with an empty board: {list}. The plan keeps them and adds {crystals} on top.', { nodes: nodesText(state.owned.size), list: gainsText(sNow), crystals: cr(state.crystals) })
+    : T('No owned nodes yet. Load your character, or click the nodes you have bought.');
+  $('clear-owned').textContent = state.owned.size ? T('Clear owned nodes and get {crystals} back', { crystals: cr(ownedCost) }) : T('Clear owned nodes');
   let run = 0; const sofar = new Set(state.owned);
   rows('order', plan.seq.map((i, k) => {
     const n = P.NODES[i]; run += n.cost; sofar.add(i);
@@ -385,41 +414,45 @@ function render() {
 
   // --- Why: one hit, three boards ---
   const H = s => P.hit(s, b, t), h = [H({}), H(sNow), H(sAfter)];
-  ['empty', 'now', 'after'].forEach((k, n) => { $('h-' + k).textContent = int(h[n].average); $('h-' + k + '-sub').textContent = `${rate(h[n].critRate)} crit, ${rate(h[n].blocked)} blocked`; });
+  ['empty', 'now', 'after'].forEach((k, n) => { $('h-' + k).textContent = int(h[n].average); $('h-' + k + '-sub').textContent = T('{crit} crit, {blocked} blocked', { crit: rate(h[n].critRate), blocked: rate(h[n].blocked) }); });
   rows('states', [
-    { cells: ['Normal hit', ...h.map(x => [int(x.normal), 'num'])] },
-    { cells: ['Critical hit', ...h.map(x => [int(x.crit), 'num'])] },
-    { cells: ['Attack', ...h.map(x => [int(x.attack), 'num'])] },
-    { cells: ['Damage Boost, after the boss’s Tolerance', ...h.map(x => [rate(x.bucket - 1), 'num'])] },
-    { cells: ['Damage gained from the board', ['+0.00%', 'num'], [signed(d0 - 1), 'num'], [signed(d1 - 1), 'num']], cls: 'major' },
-    { cells: ['Survivability gained from the board', ['+0.00%', 'num'], [signed(e0 - 1), 'num'], [signed(e1 - 1), 'num']], cls: 'major' },
+    { cells: [T('Normal hit'), ...h.map(x => [int(x.normal), 'num'])] },
+    { cells: [T('Critical hit'), ...h.map(x => [int(x.crit), 'num'])] },
+    { cells: [T('Attack'), ...h.map(x => [int(x.attack), 'num'])] },
+    { cells: [T('Damage Boost, after the boss’s Tolerance'), ...h.map(x => [rate(x.bucket - 1), 'num'])] },
+    { cells: [T('Damage gained from the board'), [signed(0), 'num'], [signed(d0 - 1), 'num'], [signed(d1 - 1), 'num']], cls: 'major' },
+    { cells: [T('Survivability gained from the board'), [signed(0), 'num'], [signed(e0 - 1), 'num'], [signed(e1 - 1), 'num']], cls: 'major' },
   ]);
 
   // what one node is worth, with the arithmetic
   const eb = t.over ? Object.assign({}, b, t.over) : b;  // boss numbers for this encounter
-  const now = h[1], base = int(now.attack - 0.1 * eb.boss_defense) + (eb.boss_defense ? ' Attack after Defense' : ' Attack');
-  const bossBucket = (100 + eb.boss_damage_boost_pct - b.tolerance_pct - (sNow['PvE Damage Tolerance'] || 0) - (sNow['Boss Damage Tolerance'] || 0)).toFixed(1);
+  const now = h[1], base = T(eb.boss_defense ? '{n} Attack after Defense' : '{n} Attack', { n: int(now.attack - 0.1 * eb.boss_defense) });
+  const bucket = fx(now.bucket * 100, 1), bossBucket = fx(100 + eb.boss_damage_boost_pct - b.tolerance_pct - (sNow['PvE Damage Tolerance'] || 0) - (sNow['Boss Damage Tolerance'] || 0), 1);
+  const critHow = now.critRate * 100 >= b.crit_cap_pct ? T('You are at the crit cap here')
+    : !t.crit ? T('10 points add {x}% crit chance', { x: fx(10 * b.crit_pct_per_point, 2) })
+      : b.crit_hit + (sNow['Critical Hit'] || 0) + 10 <= t.crit - b.crit_cap_pct * 10 ? T('Still under {n} Critical Hit, where crits start here', { n: int(t.crit - b.crit_cap_pct * 10) })
+        : T('10 points add {x}% crit chance', { x: 1 });
   const how = {
     'PvE Attack': `3 ÷ ${base}`, 'Boss Attack': `3 ÷ ${base}`,
-    'PvE Damage Boost': `1.5 ÷ ${(now.bucket * 100).toFixed(1)} (100 + your Damage Boost − boss Tolerance)`, 'Boss Damage Boost': `1 ÷ ${(now.bucket * 100).toFixed(1)} (100 + your Damage Boost − boss Tolerance)`,
-    'Critical Hit': now.critRate * 100 >= b.crit_cap_pct ? 'You are at the crit cap here' : t.crit ? (b.crit_hit + (sNow['Critical Hit'] || 0) + 10 <= t.crit - b.crit_cap_pct * 10 ? `Still under ${int(t.crit - b.crit_cap_pct * 10)} Critical Hit, where crits start here` : '10 points add 1% crit chance') : `10 points add ${(10 * b.crit_pct_per_point).toFixed(2)}% crit chance`,
-    'PvE Accuracy': !t.acc ? 'This encounter does not block you' : now.blocked <= 0 ? 'You are never blocked here' : `5 points block ${(5 * b.block_pct_per_point).toFixed(1)}% fewer hits`,
-    'PvE Defense': `3 damage off a ${int(eb.boss_hit)} hit`, 'Boss Defense': `3 damage off a ${int(eb.boss_hit)} hit`,
-    'PvE Damage Tolerance': `1.5 ÷ ${bossBucket} (the boss’s bucket)`, 'Boss Damage Tolerance': `1 ÷ ${bossBucket} (the boss’s bucket)`,
-    HP: `100 ÷ ${int(b.hp + (sNow.HP || 0))} HP`, MP: 'No effect on damage or survival', 'Critical Hit Resist': 'Bosses do not crit',
-    'PvE Evasion': b.evasion_pct_per_point ? `5 points avoid ${(5 * b.evasion_pct_per_point).toFixed(2)}% of hits` : 'Not counted: no reliable data',
+    'PvE Damage Boost': T('{v} ÷ {bucket} (100 + your Damage Boost − boss Tolerance)', { v: dec(1.5), bucket }), 'Boss Damage Boost': T('{v} ÷ {bucket} (100 + your Damage Boost − boss Tolerance)', { v: 1, bucket }),
+    'Critical Hit': critHow,
+    'PvE Accuracy': !t.acc ? T('This encounter does not block you') : now.blocked <= 0 ? T('You are never blocked here') : T('5 points block {x}% fewer hits', { x: fx(5 * b.block_pct_per_point, 1) }),
+    'PvE Defense': T('3 damage off a {n} hit', { n: int(eb.boss_hit) }), 'Boss Defense': T('3 damage off a {n} hit', { n: int(eb.boss_hit) }),
+    'PvE Damage Tolerance': T('{v} ÷ {bucket} (the boss’s bucket)', { v: dec(1.5), bucket: bossBucket }), 'Boss Damage Tolerance': T('{v} ÷ {bucket} (the boss’s bucket)', { v: 1, bucket: bossBucket }),
+    HP: T('100 ÷ {n} HP', { n: int(b.hp + (sNow.HP || 0)) }), MP: T('No effect on damage or survival'), 'Critical Hit Resist': T('Bosses do not crit'),
+    'PvE Evasion': b.evasion_pct_per_point ? T('5 points avoid {x}% of hits', { x: fx(5 * b.evasion_pct_per_point, 2) }) : T('Not counted: no reliable data'),
   };
   const worth = r => (mix[0] * r.damage + mix[1] * r.ehp) / r.costs[0];
   const types = P.nodeTypes(b, state.owned, t).sort((x, y) => worth(y) - worth(x)), topWorth = Math.max(worth(types[0]), 1e-12);
   rows('worth', types.map((r, k) => ({ cls: worth(r) > 0 ? '' : 'faint', cells: [
-    [[describe(r), el('small', '', how[r.stat] || '')], ''], [r.costs.join(' or '), 'num'], [signed(r.damage), 'num'], [signed(r.ehp), 'num'],
+    [[describe(r), el('small', '', how[r.stat] || '')], ''], [r.costs.join(T(' or ')), 'num'], [signed(r.damage), 'num'], [signed(r.ehp), 'num'],
     [bar(worth(r) / topWorth, k === 0), 'track'], [signed(worth(r)), 'num']] })));
 
   // other ways to spend the same crystals, all measured against an empty board
-  const ways = [{ name: 'This plan', chosen: plan.chosen, cost: spent }, ...P.baselines(state.crystals, b, state.goal, state.owned, t).map(x => ({ ...x, cost: P.spent(x.chosen, state.owned) }))];
+  const ways = [{ name: T('This plan'), chosen: plan.chosen, cost: spent }, ...P.baselines(state.crystals, b, state.goal, state.owned, t).map(x => ({ ...x, name: T(x.name), cost: P.spent(x.chosen, state.owned) }))];
   if (state.owned.size) {
     const all = Math.min(232, state.crystals + ownedCost), fresh = P.plan(all, b, state.goal, [], t);
-    ways.push({ name: `Clear the board and re-plan all ${cr(all)}`, chosen: fresh.chosen, cost: P.spent(fresh.seq) });
+    ways.push({ name: T('Clear the board and re-plan all {crystals}', { crystals: cr(all) }), chosen: fresh.chosen, cost: P.spent(fresh.seq) });
   }
   const top = Math.max(...ways.map(w => goalValue(w.chosen)), 1e-12);
   rows('alts', ways.map((w, k) => {
@@ -427,15 +460,37 @@ function render() {
     return { cls: k === 0 ? 'current' : '', cells: [w.name, [w.cost, 'num'], [signed(s[0] - 1), 'num'], [signed(s[1] - 1), 'num'], [bar(goalValue(w.chosen) / top), 'track']] };
   }));
   const best = ways.slice(1).reduce((m, w) => Math.max(m, goalValue(w.chosen)), -Infinity), mine = goalValue(plan.chosen);
-  $('proof-note').textContent = !plan.seq.length ? 'There is nothing to buy yet, so the three boards below are the same.'
-    : `Planned for ${t.name.toLowerCase()}. Every figure on this tab is computed from your stats.`
-      + (state.owned.size && best > mine + 1e-9 ? ' Clearing your board and re-planning everything would do better than adding to it: see Other ways to spend them.' : '');
+  $('proof-note').textContent = !plan.seq.length ? T('There is nothing to buy yet, so the three boards below are the same.')
+    : T('Planned for: {name}. Every figure on this tab is computed from your stats.', { name: tName })
+      + (state.owned.size && best > mine + 1e-9 ? ' ' + T('Clearing your board and re-planning everything would do better than adding to it: see Other ways to spend them.') : '');
 
   // the same route against every encounter
   const enc = targets().filter(x => x.id !== 'custom' || state.target === 'custom').map(x => ({ x, a: P.hit(sNow, b, x), z: P.hit(sAfter, b, x) }));
   const topGain = Math.max(...enc.map(r => r.z.average / r.a.average - 1), 1e-12);
-  rows('enc', enc.map(({ x, a, z }) => ({ cls: x.id === t.id ? 'current' : '', cells: [x.name + (x.id === t.id ? ' (planned for)' : ''), [rate(z.critRate), 'num'], [rate(z.blocked), 'num'],
+  rows('enc', enc.map(({ x, a, z }) => ({ cls: x.id === t.id ? 'current' : '', cells: [T(x.name) + (x.id === t.id ? ' ' + T('(planned for)') : ''), [rate(z.critRate), 'num'], [rate(z.blocked), 'num'],
     [int(a.average), 'num'], [int(z.average), 'num'], [bar((z.average / a.average - 1) / topGain), 'track'], [signed(z.average / a.average - 1), 'num']] })));
+
+  // --- the formula with your numbers, for the board after this plan ---
+  const z = h[2], g = k => sAfter[k] || 0, afterDef = Math.max(0, z.attack - 0.1 * eb.boss_defense);
+  const pr = state.parts && state.parts.attack === b.attack ? state.parts : null;
+  const rating = b.crit_hit + g('Critical Hit'), acc = b.accuracy + g('PvE Accuracy');
+  rows('calc', [
+    { cells: [T('Your Attack'), pr ? T('(({weapon} weapon + {lines} Attack lines) × {wb} Weapon Boost + {bonus} Attack Bonus) × {inc} Attack Increase + {flat} PvE and Boss Attack',
+      { weapon: int(pr.weapon), lines: int(pr.lines), wb: fx(1 + pr.weaponBoost / 100, 3), bonus: int(pr.bonus), inc: fx(1 + pr.increase / 100, 3), flat: int(pr.flat) })
+      : T('The Attack you entered under Your stats'), [int(b.attack), 'num']] },
+    { cells: [T('Attack with the board'), T('{a} + {pve} PvE Attack + {boss} Boss Attack from nodes', { a: int(b.attack), pve: g('PvE Attack'), boss: g('Boss Attack') }), [int(z.attack), 'num']] },
+    { cells: [T('After the boss’s Defense'), T('{a} × 100% skill − {def} Defense × {k}', { a: int(z.attack), def: int(eb.boss_defense), k: dec(0.1) }), [int(afterDef), 'num']] },
+    { cells: [T('Damage Boost multiplier'), T('1 + {yours} yours + {nodes} from nodes − {tol} boss Tolerance', { yours: pc(b.damage_boost_pct), nodes: pc(g('PvE Damage Boost') + g('Boss Damage Boost')), tol: pc(eb.boss_tolerance_pct) }), ['× ' + fx(z.bucket, 3), 'num']] },
+    { cells: [T('Normal hit'), `${int(afterDef)} × ${fx(z.bucket, 3)}`, [int(z.normal), 'num']], cls: 'major' },
+    { cells: [T('Critical hit'), T('{n} × ({base} + {cdb} Critical Damage Boost − {res} boss resist)', { n: int(z.normal), base: dec(1.5), cdb: pc(b.crit_damage_boost_pct), res: pc(eb.boss_crit_dmg_resist_pct) }), [int(z.crit), 'num']], cls: 'major' },
+    { cells: [T('Crit chance'), t.crit ? T('{cap} cap − ({need} needed − {have} Critical Hit) × {k}, kept between 0 and the cap', { cap: pc(b.crit_cap_pct), need: int(t.crit), have: int(rating), k: dec(0.1) })
+      : T('{have} Critical Hit × {k}%, up to the {cap} cap', { have: int(rating), k: fx(b.crit_pct_per_point, 4), cap: pc(b.crit_cap_pct) }), [rate(z.critRate), 'num']] },
+    { cells: [T('Hits blocked'), t.acc ? T('({need} needed − {have} Accuracy) × {k}%, never below 0', { need: int(t.acc), have: int(acc), k: dec(b.block_pct_per_point) }) : T('This encounter does not block you'), [rate(z.blocked), 'num']] },
+    { cells: [T('Average hit'), T('({n} + {p} × ({c} − {n})) × (1 − {b} × {loss} lost per block)', { n: int(z.normal), p: rate(z.critRate), c: int(z.crit), b: rate(z.blocked), loss: pc(b.block_loss_pct) }), [int(z.average), 'num']], cls: 'current' },
+    { cells: [T('The same hit on your board now'), T('Same steps, with the nodes you own'), [int(h[1].average), 'num']] },
+    { cells: [T('The same hit on an empty board'), T('Same steps, with no nodes'), [int(h[0].average), 'num']] },
+  ]);
+  $('calc-note').textContent = T('Against: {name}, with the board as it would be after this plan.', { name: tName });
 
   // --- Compare ---
   const need = k => state.cmp.a === k || state.cmp.b === k, o = state.cmp.other;
@@ -455,27 +510,26 @@ function render() {
   }));
   mini('mini-a', A, B, 'only-a'); mini('mini-b', B, A, 'only-b');
   // name the two boards instead of calling them A and B
-  const goalName = { dps: 'Damage', tank: 'Survival', balanced: 'Both' };
-  const sideName = k => k === 'player' ? (state.cmp.player.name || 'Another player') : k === 'other' ? `Plan: ${cr(o.crystals)}, ${goalName[o.goal]}` : SIDES[k];
+  const sideName = k => k === 'player' ? (state.cmp.player.name || T('Another player')) : k === 'other' ? T('Plan: {crystals}, {goal}', { crystals: cr(o.crystals), goal: T(GOAL_NAMES[o.goal]) }) : T(SIDES[k]);
   let nameA = sideName(SIDES[state.cmp.a] ? state.cmp.a : 'mine'), nameB = sideName(SIDES[state.cmp.b] ? state.cmp.b : 'plan');
-  if (nameA === nameB) { nameA += ' (left)'; nameB += ' (right)'; }
-  $('cmp-ha').textContent = nameA; $('cmp-hb').textContent = nameB; $('cmp-hd').textContent = 'Difference';
-  $('key-a').textContent = `Only on ${nameA}`; $('key-b').textContent = `Only on ${nameB}`;
-  $('cmp-note').textContent = `The difference is ${nameB} compared with ${nameA}: a plus means ${nameB} has more. Green is where ${nameA} is ahead, red is where ${nameB} is.`;
+  if (nameA === nameB) { nameA += ' ' + T('(left)'); nameB += ' ' + T('(right)'); }
+  $('cmp-ha').textContent = nameA; $('cmp-hb').textContent = nameB; $('cmp-hd').textContent = T('Difference');
+  $('key-a').textContent = T('Only on: {name}', { name: nameA }); $('key-b').textContent = T('Only on: {name}', { name: nameB });
+  $('cmp-note').textContent = T('The difference is “{b}” compared with “{a}”: a plus means “{b}” has more. Green is where “{a}” is ahead, red is where “{b}” is.', { a: nameA, b: nameB });
   const tA = P.totals(A), tB = P.totals(B), sA = sc(tA), sB = sc(tB), hA = H(tA), hB = H(tB);
   // difference cell, coloured from the left board's side: green where the left board is ahead, red where the right one is.
   // sense: 1 = more is better, -1 = less is better, 0 = neither (no colour)
   const tone = (d, sense) => 'num' + (!sense || Math.abs(d) < 1e-9 ? '' : d * sense > 0 ? ' behind' : ' ahead');
-  const diff = (x, y, fmt, sense = 1) => [(y - x >= 0 ? '+' : '−') + fmt(Math.abs(y - x)), tone(y - x, sense)], plain = v => String(+v.toFixed(1));
+  const diff = (x, y, fmt, sense = 1) => [(y - x >= 0 ? '+' : '−') + fmt(Math.abs(y - x)), tone(y - x, sense)];
   rows('cmp', [
-    { cells: ['Nodes', A.size - 1, B.size - 1, diff(A.size, B.size, plain, 0)] },
-    { cells: ['Crystals in the board', P.spent(A), P.spent(B), diff(P.spent(A), P.spent(B), plain, 0)] },
-    { cells: ['Damage gained from the board', [signed(sA[0] - 1), 'num'], [signed(sB[0] - 1), 'num'], [signed(sB[0] / sA[0] - 1), tone(sB[0] - sA[0], 1)]], cls: 'major' },
-    { cells: ['Survivability gained from the board', [signed(sA[1] - 1), 'num'], [signed(sB[1] - 1), 'num'], [signed(sB[1] / sA[1] - 1), tone(sB[1] - sA[1], 1)]], cls: 'major' },
-    { cells: ['Average hit', [int(hA.average), 'num'], [int(hB.average), 'num'], diff(hA.average, hB.average, int)] },
-    { cells: ['Crit chance', [rate(hA.critRate), 'num'], [rate(hB.critRate), 'num'], diff(hA.critRate, hB.critRate, rate)] },
-    { cells: ['Hits blocked', [rate(hA.blocked), 'num'], [rate(hB.blocked), 'num'], diff(hA.blocked, hB.blocked, rate, -1)] },
-    ...[...new Set([...Object.keys(tA), ...Object.keys(tB)])].sort().map(k => ({ cells: [k, [plain(tA[k] || 0), 'num'], [plain(tB[k] || 0), 'num'], diff(tA[k] || 0, tB[k] || 0, plain)] })),
+    { cells: [T('Nodes'), A.size - 1, B.size - 1, diff(A.size, B.size, plain, 0)] },
+    { cells: [T('Crystals in the board'), P.spent(A), P.spent(B), diff(P.spent(A), P.spent(B), plain, 0)] },
+    { cells: [T('Damage gained from the board'), [signed(sA[0] - 1), 'num'], [signed(sB[0] - 1), 'num'], [signed(sB[0] / sA[0] - 1), tone(sB[0] - sA[0], 1)]], cls: 'major' },
+    { cells: [T('Survivability gained from the board'), [signed(sA[1] - 1), 'num'], [signed(sB[1] - 1), 'num'], [signed(sB[1] / sA[1] - 1), tone(sB[1] - sA[1], 1)]], cls: 'major' },
+    { cells: [T('Average hit'), [int(hA.average), 'num'], [int(hB.average), 'num'], diff(hA.average, hB.average, int)] },
+    { cells: [T('Crit chance'), [rate(hA.critRate), 'num'], [rate(hB.critRate), 'num'], diff(hA.critRate, hB.critRate, rate)] },
+    { cells: [T('Hits blocked'), [rate(hA.blocked), 'num'], [rate(hB.blocked), 'num'], diff(hA.blocked, hB.blocked, rate, -1)] },
+    ...[...new Set([...Object.keys(tA), ...Object.keys(tB)])].sort().map(k => ({ cells: [T(k), [plain(tA[k] || 0), 'num'], [plain(tB[k] || 0), 'num'], diff(tA[k] || 0, tB[k] || 0, plain)] })),
   ]);
 }
 
@@ -490,7 +544,7 @@ document.querySelectorAll('input[name=goal]').forEach(r => {
   r.checked = r.value === state.goal;
   r.addEventListener('change', () => { state.goal = r.value; update(); });
 });
-const targetOptions = () => targets().map(t => new Option(t.name, t.id));
+const targetOptions = () => targets().map(t => new Option(T(t.name), t.id));
 $('target').replaceChildren(...targetOptions()); $('target').value = targetById(state.target).id;
 $('target').addEventListener('change', e => { state.target = e.target.value; update(); });
 // clearing the board gives its crystals back: they join the crystals to spend
@@ -499,8 +553,8 @@ $('clear-owned').addEventListener('click', () => { const back = P.spent(state.ow
 // number fields for the stats and the custom encounter
 function fieldGrid(id, list, store, divisors) {
   $(id).replaceChildren(...list.flatMap(([k, label]) => {
-    if (!k) return [el('p', 'sub', label)];
-    const l = el('label', '', label), inp = el('input');
+    if (!k) return [el('p', 'sub', T(label))];
+    const l = el('label', '', T(label)), inp = el('input');
     l.htmlFor = inp.id = id + '-' + k;
     inp.type = 'number'; inp.step = 'any'; inp.min = 0; inp.value = +(+store()[k]).toFixed(4);
     inp.addEventListener('change', () => {
@@ -516,7 +570,7 @@ $('reset-stats').addEventListener('click', () => { state.build = Object.assign({
 
 // compare: what each side shows, and the settings of the second plan
 for (const side of ['a', 'b']) {
-  $('cmp-' + side).replaceChildren(...Object.entries(SIDES).map(([v, label]) => new Option(label, v)));
+  $('cmp-' + side).replaceChildren(...Object.entries(SIDES).map(([v, label]) => new Option(T(label), v)));
   $('cmp-' + side).value = SIDES[state.cmp[side]] ? state.cmp[side] : side === 'a' ? 'mine' : 'plan';
   $('cmp-' + side).addEventListener('change', e => { state.cmp[side] = e.target.value; update(); });
 }
@@ -526,52 +580,55 @@ $('o-target').replaceChildren(...targetOptions());
   $(id).addEventListener('change', e => { state.cmp.other[k] = clean(e.target.value); e.target.value = state.cmp.other[k]; update(); });
 });
 
-// --- characters from the official API (needs the local server: the API refuses direct browser calls) ---
+// --- characters from the official API (needs a server beside the page: the API refuses direct browser calls) ---
 const offline = location.protocol === 'file:';
+// messages from character.js arrive in English; put them in the page's language
+const said = msg => { const m = /^Reading gear (\d+) of (\d+)…$/.exec(msg) || /^The AION 2 site answered (\d+)\.$/.exec(msg);
+  return !m ? T(msg) : m.length === 3 ? T('Reading gear {a} of {b}…', { a: m[1], b: m[2] }) : T('The AION 2 site answered {code}.', { code: m[1] }); };
 function lookup(form, region, name, hitsId, status, onPick) {
   const say = (text, warn) => { $(status).textContent = text; $(status).classList.toggle('warn', !!warn); };
-  $(region).replaceChildren(...Object.entries(C.REGIONS).map(([v, label]) => new Option(label, v)));
+  $(region).replaceChildren(...Object.entries(C.REGIONS).map(([v, label]) => new Option(T(label), v)));
   if (offline) {
     [...$(form).elements].forEach(x => { x.disabled = true; });
-    say('To load a character, run “docker compose up -d” in this folder and open http://localhost:8787. Everything else works without it.');
+    say(T('To load a character, run “docker compose up -d” in this folder and open http://localhost:8787. Everything else works without it.'));
   }
   $(form).addEventListener('submit', async e => {
     e.preventDefault();
-    $(hitsId).replaceChildren(); say('Searching…');
+    $(hitsId).replaceChildren(); say(T('Searching…'));
     try {
       const hits = await C.search($(name).value.trim(), $(region).value);
-      say(hits.length ? 'Pick the character.' : 'No character with that name in this region.');
+      say(T(hits.length ? 'Pick the character.' : 'No character with that name in this region.'));
       $(hitsId).replaceChildren(...hits.map(h => {
-        const li = el('li'), b = el('button', 'btn btn--quiet', `${h.name}, ${h.serverName}, level ${h.level}`);
+        const li = el('li'), b = el('button', 'btn btn--quiet', T('{name}, {server}, level {level}', { name: h.name, server: h.serverName, level: h.level }));
         b.type = 'button';
-        b.addEventListener('click', async () => { $(hitsId).replaceChildren(); try { await onPick(h, say); } catch (err) { say(err.message, true); } });
+        b.addEventListener('click', async () => { $(hitsId).replaceChildren(); try { await onPick(h, say); } catch (err) { say(said(err.message), true); } });
         li.appendChild(b); return li;
       }));
-    } catch (err) { say(err.message, true); }
+    } catch (err) { say(said(err.message), true); }
   });
   return say;
 }
 const toSet = coords => new Set(coords.map(([x, y]) => P.POS.get(x + ',' + y)).filter(i => i !== undefined));
 lookup('char-form', 'char-region', 'char-name', 'char-hits', 'char-status', async (hit, say) => {
-  const d = await C.load(hit, say);
-  const { build, owned } = C.toBuild(d.info, d.items, d.boards);
+  const d = await C.load(hit, msg => say(said(msg)));
+  const { build, parts, owned } = C.toBuild(d.info, d.items, d.boards);
   if (!(build.attack > 0)) throw new Error('This character has no weapon equipped, so there is nothing to calculate from.');
-  Object.assign(state.build, build);
+  Object.assign(state.build, build); state.parts = parts;
   const set = toSet(owned);
   if (P.connected(set)) state.owned = set;
   buildFields(); update();
-  say(`Loaded ${hit.name}: Attack ${int(build.attack)}, Damage Boost ${build.damage_boost_pct}%, Critical Hit ${int(build.crit_hit)}, Accuracy ${int(build.accuracy)}, `
-    + `Damage Tolerance ${build.tolerance_pct}%, Critical Damage Boost ${build.crit_damage_boost_pct}%. ${set.size} Ariel node${set.size === 1 ? '' : 's'} marked as owned. `
-    + 'Added up from gear, titles and boards; pets, wings, skill passives and base stats are not in the data, and HP is not available. Check them under My stats.');
+  say(T('Loaded {name}: Attack {attack}, Damage Boost {boost}%, Critical Hit {crit}, Accuracy {acc}, Damage Tolerance {tol}%, Critical Damage Boost {cdb}%. {nodes} marked as owned. Added up from gear, titles and boards; pets, wings, skill passives and base stats are not in the data, and HP is not available. Check them under My stats.',
+    { name: hit.name, attack: int(build.attack), boost: dec(build.damage_boost_pct), crit: int(build.crit_hit), acc: int(build.accuracy), tol: dec(build.tolerance_pct), cdb: dec(build.crit_damage_boost_pct), nodes: T(set.size === 1 ? '{n} Ariel node' : '{n} Ariel nodes', { n: set.size }) }));
 });
+const openNodes = n => T(n === 1 ? '{name}: {n} Ariel node open.' : '{name}: {n} Ariel nodes open.', { name: state.cmp.player.name, n });
 const playerSay = lookup('p-form', 'p-region', 'p-name', 'p-hits', 'p-status', async (hit, say) => {
-  say('Reading their Ariel board…');
+  say(T('Reading their Ariel board…'));
   const set = toSet(await C.loadBoard(hit));
   state.cmp.player = { name: `${hit.name}, ${hit.serverName}`, nodes: [...set] };
   update();
-  say(`${state.cmp.player.name}: ${set.size} Ariel node${set.size === 1 ? '' : 's'} open.`);
+  say(openNodes(set.size));
 });
-if (!offline && state.cmp.player.name) playerSay(`${state.cmp.player.name}: ${state.cmp.player.nodes.length} Ariel nodes open.`);
+if (!offline && state.cmp.player.name) playerSay(openNodes(state.cmp.player.nodes.length));
 
 buildFields();
 fieldGrid('custom-fields', CUSTOM_FIELDS, () => state.custom, ['boss_hit']);

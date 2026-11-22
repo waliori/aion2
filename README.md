@@ -17,6 +17,7 @@ You can also just double-click `index.html`; everything works that way except lo
 
 - `board.js` — the board data (checked against the official API: 152 of 152 nodes match)
 - `planner.js` — the maths; `node planner.js` runs its self-test
+- `i18n.js` — English and French; `node i18n.js` checks that every text has a French entry
 - `character.js` — loads a character from the official API and adds up its stats
 - `index.html` — the page
 - `serve.py` — local server; relays character lookups to the official API
@@ -25,7 +26,7 @@ You can also just double-click `index.html`; everything works that way except lo
 
 ### Online
 
-Published at https://daevanion.walior.it as a Cloudflare Worker. Cloudflare Workers Builds redeploys it on every push to `main`, running `sh build.sh && npx wrangler deploy` from the repository root. `build.sh` runs the planner's self-test and copies the seven site files into `dist/`; `wrangler.toml` points the Worker at that folder and at `daevanion/worker.js`, the relay. Nothing else in the repo is published.
+Published at https://daevanion.walior.it as a Cloudflare Worker. Cloudflare Workers Builds redeploys it on every push to `main`, running `sh build.sh && npx wrangler deploy` from the repository root. `build.sh` runs the planner's self-test and the translation check, then copies the site files into `dist/`; `wrangler.toml` points the Worker at that folder and at `daevanion/worker.js`, the relay. Nothing else in the repo is published.
 
 ### Load your character
 
@@ -48,6 +49,10 @@ A settings strip (your character, crystals, goal, encounter), the board, and fou
 - **Why**: the calculation, all from your own numbers. One average hit on an empty board, on your board now and after the plan; what one node of each kind is worth per crystal, with the arithmetic; the plan against other ways of spending the same crystals; and the same route against every encounter.
 - **Compare**: two boards side by side with the difference in every stat. Each side can be your board now, this plan, another plan with its own crystals, goal and encounter, or another player's Ariel board loaded from the game. Both sides are valued with your stats.
 - **My stats**: your numbers, the custom encounter's boss numbers, and how it is calculated.
+
+### Languages
+
+English and French, switched with the two buttons in the title band; the first visit follows the browser's language. English is the source: every text is an English key and `i18n.js` maps it to French. Stat names are the game's own French terms, read from the official API. The build fails if any text on the page has no French entry.
 
 ### Encounters
 
