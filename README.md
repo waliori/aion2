@@ -24,7 +24,7 @@ You can also just double-click `index.html`; everything works that way except lo
 
 ### Load your character
 
-Pick your region, search your character name, click it. This fills in Attack, Damage Boost, Damage Tolerance, Critical Damage Boost and crit chance, and marks the Ariel nodes you already own. It takes 15 to 20 seconds.
+Pick your region, search your character name, click it. This fills in Attack, Damage Boost, Critical Hit, Accuracy, Damage Tolerance and Critical Damage Boost, and marks the Ariel nodes you already own. It takes 15 to 20 seconds.
 
 How it works: the official site (`aion2.plaync.com`, Global) has an unauthenticated JSON API, the same one shugo.gg reads. It refuses requests made directly by a web page, which is why `serve.py` relays them. It has no "final stats" endpoint, so `character.js` adds up every stat line on your gear (base, enchant, sub stats, manastones, Arcana set bonus), your titles, your other Daevanion boards and your primary-stat bonuses.
 
@@ -32,8 +32,40 @@ What that cannot see: pets, wings, skill passives, buffs and class base stats. S
 
 - **Damage Boost, Damage Tolerance, Critical Damage Boost**: summed directly; reliable unless a passive adds more.
 - **Attack**: `((weapon average + Attack lines) × Weapon Damage Boost + Attack Bonus) × Attack increase + PvE Attack`. An estimate; compare with your stat sheet.
-- **Crit chance**: Critical Hit ÷ 15, assuming the boss has no Critical Hit Resist. An upper estimate.
+- **Critical Hit and Accuracy**: the ratings, summed from gear, titles and boards with their percentage bonuses. Compare with your stat sheet.
 - **HP**: not available; type it in.
+
+### What the page shows
+
+- **The board**: nodes to buy in apricot with their buying step, nodes you own in periwinkle.
+- **What this plan adds** and **Your board now**: damage dealt and effective HP for the plan, and the same figures for the nodes you already own.
+- **Why this route**, the calculation, all from your own numbers:
+  - one hit of a 100% skill (normal, critical, average, crit chance, hits blocked) on an empty board, on your board now, and after the plan;
+  - the same route against each encounter;
+  - what one node of each kind is worth to you, with the arithmetic;
+  - the plan against two other ways of spending the same crystals, and against resetting your board and re-planning everything;
+  - the buy order with the running gain.
+
+### Encounters
+
+NCsoft publishes no boss stats. The planner uses Global player measurements from [Aion 2 Maps](https://aion2maps.com/guides/accuracy-and-crit/) (16 November 2026: one Ranger's fight logs plus Global parses):
+
+| Encounter | Critical Hit for the 50% crit cap | Accuracy where parries stop |
+|---|---|---|
+| Open world and normal dungeons | not measured | no check |
+| Transcendence tier 4 | about 1,420 | 800 to 1,075 |
+| Conquest hard, mid-bosses | 1,405 to 1,425 | 800 to 1,000 |
+| Conquest hard, final bosses | 1,525 to 1,555 | about 925; 1,075 on Transcendent Bakarma |
+| Fire Temple hard | 1,590 to 1,610 | 800 to 1,050 |
+| Ferocious Horn Den hard | 1,590 to 1,610 | 800 to 1,125 |
+| Ludra hard, mid-bosses | 1,615 to 1,650 | almost never parry |
+| Eternal Ludra, normal and hard | 1,750 to 1,850 | about 1,100, rarely up to 1,180 |
+
+The planner uses the middle of each Critical Hit range and the top of each Accuracy range. The crit figure is the boss's Critical Hit Resist plus about 500: every 100 Critical Hit short costs 10% crit chance from the 50% cap. Every 100 Accuracy short gets about 10% of hits blocked (Aion 2 Maps says 6 to 7% on average), and a blocked hit deals about half its damage.
+
+Not measured by anyone: per-boss Defense and Damage Tolerance. The defaults are Boss Damage Tolerance 20% and crit damage resist 25% (reference values from a [Korean community write-up](https://www.fmkorea.com/9569335827), March 2026) and Boss Defense 0. They apply to every encounter and are editable under Your stats.
+
+"Custom encounter" on the page takes your own boss: Accuracy and Critical Hit figures, Damage Tolerance, crit damage resist, Defense, hit size and Damage Boost. All of this lives in `TARGETS` and `DEFAULT_BUILD` in `planner.js`.
 
 ### Put your own stats in
 
@@ -73,8 +105,8 @@ What that means for the Ariel stats, and how `score()` in `planner.js` values th
 - **PvE / Boss Damage Boost** add into one bucket with your generic Damage Boost. +x% is worth `x / (100 + your total boost − boss tolerance)`. This is the diminishing return.
 - **PvE / Boss Damage Tolerance** subtract from the boss's bucket the same way.
 - **Defense** removes a flat `0.1 × Defense` from each hit, so 720 + 720 Defense from the full board is 144 damage off every boss hit.
-- **Critical Hit**: crit multiplier is `1.5 + Critical Damage Boost − boss crit damage resist (25%)`. Chance rises about 1% per 15 Critical Hit over the target's resist (1200 = 80%). Capped at 50% on Global (80% in KR guides) — at the cap these nodes are worth nothing and the planner skips them.
-- **PvE Accuracy** only matters if the boss still blocks/parries you; valued at 0 by default.
+- **Critical Hit**: crit multiplier is `1.5 + Critical Damage Boost − boss crit damage resist (25%)`. Crit chance comes from the encounter (see Encounters); where none is measured it is about 1% per 15 Critical Hit. Capped at 50% on Global (80% in KR guides). At the cap these nodes are worth nothing and the planner skips them.
+- **PvE Accuracy** only matters where the encounter still blocks you (see Encounters).
 - **Critical Hit Resist, MP**: worth nothing against bosses (bosses do not crit).
 - **PvE Evasion**: no reliable data; valued at 0 by default.
 - **HP**: `HP / your HP` more effective HP.

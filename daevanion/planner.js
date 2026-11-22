@@ -14,21 +14,40 @@
   const DEFAULT_BUILD = {
     attack: 2000,               // (Attack x Weapon Dmg Boost + Attack Bonus) x Attack Increase + PvE/Boss Attack
     damage_boost_pct: 15,       // Damage Boost + PvE Damage Boost + Boss Damage Boost (one additive bucket)
-    crit_chance_pct: 30,        // effective crit chance against the boss
-    crit_cap_pct: 50,           // Global cap (KR guides say 80)
+    crit_hit: 600,              // Critical Hit rating
+    accuracy: 700,              // Accuracy rating, PvE Accuracy included
     crit_damage_boost_pct: 5,   // on top of the base 1.5x
     hp: 15000,
     tolerance_pct: 15,          // your Damage Tolerance + PvE + Boss Damage Tolerance
-    // --- not readable in game: guesses ---
-    boss_tolerance_pct: 0,      // boss's Damage Tolerance, subtracted from your boost bucket
+    // --- not readable in game: community figures and guesses ---
+    crit_cap_pct: 50,           // Global cap (KR guides say 80)
+    crit_pct_per_point: 1 / 15, // crit chance per rating point where the encounter has no measured crit figure
+    block_pct_per_point: 0.1,   // chance to be blocked per Accuracy point short (AION 2 Timers: 10% per 100; Aion 2 Maps: ~6.7%)
+    block_loss_pct: 50,         // damage lost on a blocked hit (reports range 20 to 50)
+    boss_tolerance_pct: 20,     // boss's Damage Tolerance, subtracted from your boost bucket (KR community reference value)
+    boss_defense: 0,            // boss's Defense: takes a flat 0.1 x Defense off every hit. Never measured, so 0
     boss_crit_dmg_resist_pct: 25,
     boss_hit: 4000,             // typical boss hit before your Defense
     boss_damage_boost_pct: 50,  // boss's own Damage Boost
-    crit_pct_per_point: 1 / 15,       // 1200 Critical Hit over the target's resist = 80%
-    accuracy_dps_pct_per_point: 0,    // 0 = bosses never block/parry you
-    evasion_pct_per_point: 0,         // 0 = ignore PvE Evasion (no reliable data)
+    evasion_pct_per_point: 0,   // 0 = ignore PvE Evasion (no reliable data)
   };
   const GOALS = { dps: [1, 0], tank: [0, 1], balanced: [0.5, 0.5] };
+  // Encounters. NCsoft publishes no boss stats; these are Global player measurements from Aion 2 Maps
+  // (aion2maps.com/guides/accuracy-and-crit, 16 Nov 2026: one Ranger's fight logs plus Global parses).
+  // acc: Accuracy (Accuracy + Accuracy Bonus + PvE Accuracy) where parries stop; the top of the measured range, 0 = no check.
+  // crit: Critical Hit that reaches the 50% cap, about the boss's Critical Hit Resist + 500; 0 = not measured.
+  // over: optional boss numbers for this encounter that replace the boss_* guesses in the build (used by the custom encounter).
+  const TARGETS = [
+    { id: 'open', name: 'Open world and normal dungeons', acc: 0, crit: 0, note: 'Bosses here do not block you. No Critical Hit figure is measured, so crit chance is estimated from your rating.' },
+    { id: 't4', name: 'Transcendence tier 4', acc: 1075, crit: 1420, note: 'Crit cap at about 1,420 Critical Hit. Parries stop between 800 and 1,075 Accuracy depending on the boss; the plan uses 1,075.' },
+    { id: 'hardmid', name: 'Conquest hard, mid-bosses', acc: 1000, crit: 1415, note: 'Crit cap at 1,405 to 1,425 Critical Hit. Parries stop between 800 and 1,000 Accuracy; the plan uses 1,000.' },
+    { id: 'hardfinal', name: 'Conquest hard, final bosses', acc: 1075, crit: 1540, note: 'Crit cap at 1,525 to 1,555 Critical Hit. Parries stop at about 925 Accuracy, 1,075 on Transcendent Bakarma; the plan uses 1,075.' },
+    { id: 'fire', name: 'Fire Temple hard', acc: 1050, crit: 1600, note: 'Crit cap at 1,590 to 1,610 Critical Hit. Parries stop between 800 and 1,050 Accuracy; the plan uses 1,050.' },
+    { id: 'horn', name: 'Ferocious Horn Den hard', acc: 1125, crit: 1600, note: 'Crit cap at 1,590 to 1,610 Critical Hit. Parries stop between 800 and 1,125 Accuracy; the plan uses 1,125.' },
+    { id: 'ludramid', name: 'Ludra hard, mid-bosses', acc: 0, crit: 1630, note: 'Crit cap at 1,615 to 1,650 Critical Hit. These bosses almost never parry.' },
+    { id: 'ludra', name: 'Eternal Ludra, normal and hard', acc: 1180, crit: 1800, note: 'Crit cap at 1,750 to 1,850 Critical Hit. Parries stop at about 1,100 Accuracy, rarely up to 1,180; the plan uses 1,180.' },
+  ];
+  const env = (b, t) => (t && t.over ? Object.assign({}, b, t.over) : b);  // the build with this encounter's boss numbers
 
   function totals(chosen) {
     const t = {};
@@ -36,25 +55,36 @@
     return t;
   }
 
-  // -> [damage dealt multiplier, effective-HP multiplier] against a PvE boss, relative to no board
-  function score(stats, b) {
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  // One hit of a 100% skill against target t, in real numbers.
+  function hit(stats, b, t) {
+    b = env(b, t);
     const g = k => stats[k] || 0;
-    // damage = (attack bracket + PvE Atk + Boss Atk) x (1 + boost bucket - boss tolerance) x crit x hit
-    const atk = 1 + (g('PvE Attack') + g('Boss Attack')) / b.attack;
-    const bucket0 = 1 + (b.damage_boost_pct - b.boss_tolerance_pct) / 100;
-    const boost = 1 + (g('PvE Damage Boost') + g('Boss Damage Boost')) / 100 / bucket0;
-    const critBonus = (50 + b.crit_damage_boost_pct - b.boss_crit_dmg_resist_pct) / 100;
-    const p0 = Math.min(b.crit_chance_pct, b.crit_cap_pct) / 100;
-    const p1 = Math.min(b.crit_chance_pct + g('Critical Hit') * b.crit_pct_per_point, b.crit_cap_pct) / 100;
-    const crit = (1 + p1 * critBonus) / (1 + p0 * critBonus);
-    const acc = 1 + g('PvE Accuracy') * b.accuracy_dps_pct_per_point / 100;
+    const attack = b.attack + g('PvE Attack') + g('Boss Attack');
+    const bucket = 1 + (b.damage_boost_pct + g('PvE Damage Boost') + g('Boss Damage Boost') - b.boss_tolerance_pct) / 100;
+    const rating = b.crit_hit + g('Critical Hit'), acc = b.accuracy + g('PvE Accuracy');
+    // measured encounters: 10% crit per 100 rating short of the figure that reaches the cap
+    const critRate = clamp(t.crit ? b.crit_cap_pct - (t.crit - rating) * 0.1 : rating * b.crit_pct_per_point, 0, b.crit_cap_pct) / 100;
+    const blocked = t.acc ? clamp((t.acc - acc) * b.block_pct_per_point, 0, 80) / 100 : 0;
+    const normal = Math.max(0, attack - 0.1 * b.boss_defense) * bucket, crit = normal * (1.5 + (b.crit_damage_boost_pct - b.boss_crit_dmg_resist_pct) / 100);
+    const average = (normal + critRate * (crit - normal)) * (1 - blocked * b.block_loss_pct / 100);
+    return { attack, bucket, critRate, blocked, normal, crit, average };
+  }
+
+  // -> [damage dealt multiplier, effective-HP multiplier] against target t, relative to no board
+  function score(stats, b, t) {
+    t = t || TARGETS[0];
+    const g = k => stats[k] || 0;
+    const dmg = hit(stats, b, t).average / hit({}, b, t).average;
+    b = env(b, t);
     // damage taken = (boss hit - 0.1 x Defense) x (1 + boss boost - your tolerance) x (1 - evade)
     // Critical Hit Resist and MP are worth nothing here: bosses do not crit.
     const flat = 1 - 0.1 * (g('PvE Defense') + g('Boss Defense')) / b.boss_hit;
     const tb0 = 1 + (b.boss_damage_boost_pct - b.tolerance_pct) / 100;
     const tol = 1 - (g('PvE Damage Tolerance') + g('Boss Damage Tolerance')) / 100 / tb0;
     const eva = 1 - g('PvE Evasion') * b.evasion_pct_per_point / 100;
-    return [atk * boost * crit * acc, (1 + g('HP') / b.hp) / (flat * tol * eva)];
+    return [dmg, (1 + g('HP') / b.hp) / (flat * tol * eva)];
   }
 
   function rng32(a) {  // mulberry32: seeded so the same inputs always give the same route
@@ -122,11 +152,11 @@
 
   // ponytail: each node's gain on top of `base`, summed linearly. plan() re-solves once around
   // its own answer so the crit cap / shrinking returns are priced in; leftover cross terms are <0.1%.
-  function nodeWeights(build, mix, base) {
-    const t0 = totals(base || []), [d0, e0] = score(t0, build);
+  function nodeWeights(build, mix, base, t) {
+    const t0 = totals(base || []), [d0, e0] = score(t0, build, t);
     return NODES.map(n => {
       const s = Object.assign({}, t0); s[n.stat] = (s[n.stat] || 0) + n.value;
-      const [d, e] = score(s, build);
+      const [d, e] = score(s, build, t);
       return mix[0] * Math.log(d / d0) + mix[1] * Math.log(e / e0);
     });
   }
@@ -152,29 +182,84 @@
 
   const connected = set => order(new Set(set).add(START)).length === new Set(set).add(START).size - 1;
 
-  function plan(crystals, build, goal, owned) {
+  const spent = (set, owned) => [...set].reduce((a, i) => a + (owned && owned.has(i) ? 0 : NODES[i].cost), 0);
+
+  function plan(crystals, build, goal, owned, t) {
     const mix = GOALS[goal];
     owned = new Set(owned || []).add(START);
-    const w = nodeWeights(build, mix, owned);
+    const w = nodeWeights(build, mix, owned, t);
     let chosen = solve(crystals, w, owned);
     // second pass: value nodes at the midpoint of the first answer (halves the linearisation error)
     const seq = order(chosen, owned, w);
-    const again = solve(crystals, nodeWeights(build, mix, [...owned, ...seq.slice(0, seq.length >> 1)]), owned);
-    const obj = c => { const s = score(totals(c), build); return mix[0] * Math.log(s[0]) + mix[1] * Math.log(s[1]); };
+    const again = solve(crystals, nodeWeights(build, mix, [...owned, ...seq.slice(0, seq.length >> 1)], t), owned);
+    const obj = c => { const s = score(totals(c), build, t); return mix[0] * Math.log(s[0]) + mix[1] * Math.log(s[1]); };
     if (obj(again) > obj(chosen)) chosen = again;
-    const before = score(totals(owned), build), after = score(totals(chosen), build);
-    return { chosen, seq: order(chosen, owned, w), damage: after[0] / before[0] - 1, ehp: after[1] / before[1] - 1 };
+    return { chosen, seq: order(chosen, owned, w) };
+  }
+
+  // Two ways a player might spend the same crystals without a planner, to compare against plan().
+  function baselines(crystals, build, goal, owned, t) {
+    const mix = GOALS[goal], start = new Set(owned || []).add(START);
+    const frontier = have => [...new Set([...have].flatMap(h => ADJ[h]))].filter(i => !have.has(i));
+    // 1. always buy the neighbouring node that is worth most per crystal
+    const greedy = new Set(start);
+    for (let left = crystals; ;) {
+      const w = nodeWeights(build, mix, greedy, t);
+      const next = frontier(greedy).filter(i => NODES[i].cost <= left).sort((a, b) => w[b] / NODES[b].cost - w[a] / NODES[a].cost || NODES[a].cost - NODES[b].cost || a - b)[0];
+      if (next === undefined) break;
+      greedy.add(next); left -= NODES[next].cost;
+    }
+    // 2. walk the cheapest path to the single most valuable node, again and again
+    const rush = new Set(start);
+    for (let left = crystals; ;) {
+      const w = nodeWeights(build, mix, rush, t), dist = NODES.map(() => Infinity), prev = [], todo = new Set(NODES.keys());
+      for (const i of rush) dist[i] = 0;
+      while (todo.size) {  // Dijkstra on node cost
+        let u = -1; for (const i of todo) if (u < 0 || dist[i] < dist[u]) u = i;
+        todo.delete(u);
+        for (const v of ADJ[u]) if (dist[u] + NODES[v].cost < dist[v]) { dist[v] = dist[u] + NODES[v].cost; prev[v] = u; }
+      }
+      const goalNode = NODES.map((_, i) => i).filter(i => !rush.has(i) && dist[i] <= left && w[i] > 0).sort((a, b) => w[b] - w[a] || dist[a] - dist[b] || a - b)[0];
+      if (goalNode === undefined) break;
+      left -= dist[goalNode];
+      for (let v = goalNode; !rush.has(v); v = prev[v]) rush.add(v);
+    }
+    return [{ name: 'Always buy the best neighbouring node', chosen: greedy }, { name: 'Walk straight to the most valuable nodes', chosen: rush }];
+  }
+
+  // What one node of each kind is worth on top of `base`: [{stat, value, pct, costs, damage, ehp}] (damage/ehp as fractions)
+  function nodeTypes(build, base, t) {
+    const t0 = totals(base || []), [d0, e0] = score(t0, build, t), rows = new Map();
+    for (const n of NODES) {
+      if (n.stat === 'Start') continue;
+      if (!rows.has(n.stat)) {
+        const s = Object.assign({}, t0); s[n.stat] = (s[n.stat] || 0) + n.value;
+        const [d, e] = score(s, build, t);
+        rows.set(n.stat, { stat: n.stat, value: n.value, pct: n.pct, costs: new Set(), damage: d / d0 - 1, ehp: e / e0 - 1 });
+      }
+      rows.get(n.stat).costs.add(n.cost);
+    }
+    return [...rows.values()].map(r => ({ ...r, costs: [...r.costs].sort() }));
   }
 
   function selftest() {
     const assert = require('assert'), close = (x, y) => assert(Math.abs(x - y) < 1e-9, x + ' != ' + y);
     // fixed numbers so the checks below do not move when the defaults do
-    const b = Object.assign({}, DEFAULT_BUILD, { attack: 5000, damage_boost_pct: 80, crit_chance_pct: 40, crit_damage_boost_pct: 30, hp: 30000, tolerance_pct: 20 });
-    const all = NODES.map((_, i) => i), spent = c => [...c].reduce((a, i) => a + NODES[i].cost, 0);
+    const b = Object.assign({}, DEFAULT_BUILD, { attack: 5000, damage_boost_pct: 80, crit_hit: 600, accuracy: 700, crit_damage_boost_pct: 30, hp: 30000, tolerance_pct: 20, boss_tolerance_pct: 20 });
+    const all = NODES.map((_, i) => i);
     assert(N === 153 && spent(all) === 232 && BOARD.total_cost === 232);
     assert(connected(all), 'board is not connected under 4-neighbour adjacency');
     assert.deepStrictEqual(score({}, b), [1, 1]);
-    close(score({ 'PvE Damage Boost': 1.8 }, b)[0], 1.01);  // +1.8% on a 1.8x bucket = +1%
+    const L = { acc: 1200, crit: 1700 }, h = hit({}, b, L);
+    close(h.normal, 5000 * 1.6); close(h.crit, 8000 * 1.55);        // 1.5 + 30% - 25%
+    close(h.critRate, 0); close(h.blocked, 0.5);                    // 600 crit is 1,100 short of 1,700; 700 accuracy is 500 short of 1,200
+    close(hit({ 'PvE Accuracy': 100, 'Critical Hit': 800 }, b, L).critRate, 0.2);     // 1,400 is 300 short: 50% - 30%
+    close(hit({ 'PvE Accuracy': 100 }, b, L).average, 8000 * (1 - 0.4 * 0.5));
+    close(hit({}, b, { acc: 0, crit: 0, over: { boss_defense: 1000, boss_tolerance_pct: 0 } }).normal, 4900 * 1.8);  // custom boss numbers
+    for (const x of baselines(20, b, 'dps', [], L)) assert(spent(x.chosen) <= 20 && connected(x.chosen), x.name);
+    assert(score(totals(plan(20, b, 'dps', [], L).chosen), b, L)[0] >= Math.max(...baselines(20, b, 'dps', [], L).map(x => score(totals(x.chosen), b, L)[0])) - 1e-9);
+    assert(nodeTypes(b, [], L).length === 14);
+    close(score({ 'PvE Damage Boost': 1.6 }, b)[0], 1.01);  // +1.6% on a 1.6x bucket (80% boost - 20% boss tolerance) = +1%
     close(score({ 'Critical Hit': 9999 }, b)[0], score({ 'Critical Hit': 150 }, b)[0]);  // crit cap
     close(score({ 'Boss Defense': 400 }, b)[1], 1 / 0.99);  // 400 def = 40 dmg off a 4000 hit
     const full = score(totals(all), b), got = score(totals(plan(232, b, 'balanced').chosen), b);
@@ -200,7 +285,7 @@
     console.log('selftest ok');
   }
 
-  const api = { NODES, START, POS, ADJ, DEFAULT_BUILD, GOALS, totals, score, plan, connected };
+  const api = { NODES, START, POS, ADJ, DEFAULT_BUILD, GOALS, TARGETS, totals, hit, score, plan, order, spent, baselines, nodeTypes, connected };
   if (typeof module !== 'undefined') { module.exports = api; if (require.main === module) selftest(); }
   else root.Planner = api;
 })(this);

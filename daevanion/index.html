@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ariel board route planner</title>
-<meta name="description" content="Plan the best route through the AION 2 Ariel Daevanion board for the crystals you have.">
+<meta name="description" content="Plan the best route through the AION 2 Ariel Daevanion board for the crystals you have, and see the numbers behind it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@400;500;600&family=Wix+Madefor+Text:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="planner.css">
@@ -12,70 +12,128 @@
 <body>
 <header class="container"><div class="top">
   <h1>Ariel board route planner</h1>
-  <p>Say how many crystals you have. The apricot nodes are the ones to buy, numbered in buying order.</p>
+  <p>The apricot nodes are the ones to buy, numbered in buying order. The numbers behind the choice are below the board.</p>
 </div></header>
 
-<main class="container work">
-  <section class="sheet" aria-label="Board">
-    <div class="boardwrap"><div id="board" role="group" aria-label="Ariel Daevanion board"></div></div>
-    <p id="hint" aria-live="polite">Click a node you already bought to mark it as owned.</p>
-    <ul class="key">
-      <li><span class="swatch route"></span>Buy this</li>
-      <li><span class="swatch owned"></span>Already owned</li>
-      <li><span class="pips"><i></i><i></i><i></i></span>One tick per crystal of cost</li>
-    </ul>
+<main class="container">
+  <div class="work">
+    <section class="sheet" aria-label="Board">
+      <div class="boardwrap"><div id="board" role="group" aria-label="Ariel Daevanion board"></div></div>
+      <p id="hint" aria-live="polite">Click a node you already bought to mark it as owned.</p>
+      <ul class="key">
+        <li><span class="swatch route"></span>Buy this</li>
+        <li><span class="swatch owned"></span>Already owned</li>
+        <li><span class="pips"><i></i><i></i><i></i></span>One tick per crystal of cost</li>
+      </ul>
+    </section>
+
+    <div class="block">
+      <section class="cell">
+        <h2>Load your character</h2>
+        <form id="char-form" class="lookup">
+          <select id="char-region" name="region" aria-label="Region"></select>
+          <input id="char-name" name="character" type="search" placeholder="Character name" aria-label="Character name" required minlength="2" autocomplete="off">
+          <button class="btn" type="submit">Search</button>
+        </form>
+        <ul id="char-hits"></ul>
+        <p id="char-status" aria-live="polite"></p>
+      </section>
+
+      <section class="cell">
+        <h2>Plan</h2>
+        <div class="budget">
+          <label for="crystals">Crystals to spend</label>
+          <input id="crystals" name="crystals" type="number" min="0" max="232" value="30" inputmode="numeric">
+          <span></span>
+          <input id="slider" type="range" min="0" max="232" value="30" aria-label="Crystals to spend">
+          <span id="goal-label">Goal</span>
+          <fieldset class="seg" aria-labelledby="goal-label">
+            <input type="radio" name="goal" id="goal-dps" value="dps" checked><label for="goal-dps">Damage</label>
+            <input type="radio" name="goal" id="goal-tank" value="tank"><label for="goal-tank">Survival</label>
+            <input type="radio" name="goal" id="goal-both" value="balanced"><label for="goal-both">Both</label>
+          </fieldset>
+          <label for="target">Against</label>
+          <select id="target" name="target"></select>
+        </div>
+        <div class="fields" id="custom-fields" hidden></div>
+        <p class="note" id="target-note"></p>
+      </section>
+
+      <section class="cell">
+        <h2>What this plan adds</h2>
+        <dl class="figures">
+          <div><dd id="r-dmg">0%</dd><dt>Damage dealt</dt></div>
+          <div><dd id="r-ehp">0%</dd><dt>Effective HP</dt></div>
+          <div><dd id="r-spent">0</dd><dt>Crystals spent</dt></div>
+        </dl>
+        <p id="gains"></p>
+      </section>
+
+      <section class="cell">
+        <h2>Your board now</h2>
+        <dl class="figures" id="now-figures">
+          <div><dd id="n-dmg">0%</dd><dt>Damage dealt</dt></div>
+          <div><dd id="n-ehp">0%</dd><dt>Effective HP</dt></div>
+          <div><dd id="n-spent">0</dd><dt>Crystals in it</dt></div>
+        </dl>
+        <p id="owned-note"></p>
+        <p><button class="btn btn--quiet" id="clear-owned" type="button">Clear owned nodes</button></p>
+      </section>
+    </div>
+  </div>
+
+  <section class="proof" aria-labelledby="proof-title">
+    <h2 id="proof-title">Why this route</h2>
+    <p class="note" id="proof-note"></p>
+
+    <div class="grid">
+      <section class="block cell">
+        <h3>One hit of a 100% skill, before and after</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Against the selected encounter</th><th class="num">Empty board</th><th class="num">Your board now</th><th class="num">After this plan</th></tr></thead>
+          <tbody id="states"></tbody>
+        </table></div>
+        <p class="note">Boss Defense is set to 0 because nobody has measured it; it takes a flat 0.1 × Defense off every hit. Set it in Your stats, or per boss in a custom encounter.</p>
+      </section>
+
+      <section class="block cell">
+        <h3>The same route against each encounter</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Encounter</th><th class="num">Crit now</th><th class="num">Crit after</th><th class="num">Blocked now</th><th class="num">Blocked after</th><th class="num">Hit now</th><th class="num">Hit after</th><th class="num">Gain</th></tr></thead>
+          <tbody id="enc"></tbody>
+        </table></div>
+        <p class="note">Accuracy and Critical Hit figures are measured by players on Global (Aion 2 Maps, November 2026), not published by NCsoft. Boss Damage Tolerance and crit damage resist are the same guesses for every row; change them in Your stats.</p>
+      </section>
+
+      <section class="block cell">
+        <h3>What one node is worth to you</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Node</th><th class="num">Cost</th><th class="num">Damage</th><th class="num">Eff. HP</th><th class="num">Per crystal</th><th>How</th></tr></thead>
+          <tbody id="worth"></tbody>
+        </table></div>
+        <p class="note">On top of what you own now, against the selected encounter. Sorted by worth per crystal for your goal.</p>
+      </section>
+
+      <section class="block cell">
+        <h3>Other ways to spend the same crystals</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Way</th><th class="num">Crystals</th><th class="num">Damage</th><th class="num">Eff. HP</th><th>For your goal</th></tr></thead>
+          <tbody id="alts"></tbody>
+        </table></div>
+        <p class="note">Each figure is measured against an empty board, so the rows compare directly.</p>
+      </section>
+
+      <section class="block cell">
+        <h3>Buy order</h3>
+        <div class="register scroll"><table>
+          <thead><tr><th class="num">Step</th><th>Node</th><th class="num">Column</th><th class="num">Row</th><th class="num">Cost</th><th class="num">Total</th><th class="num">Damage so far</th><th class="num">Eff. HP so far</th></tr></thead>
+          <tbody id="order"></tbody>
+        </table></div>
+      </section>
+    </div>
   </section>
 
-  <div class="block">
-    <section class="cell">
-      <h2>Load your character</h2>
-      <form id="char-form" class="lookup">
-        <select id="char-region" name="region" aria-label="Region"></select>
-        <input id="char-name" name="character" type="search" placeholder="Character name" aria-label="Character name" required minlength="2" autocomplete="off">
-        <button class="btn" type="submit">Search</button>
-      </form>
-      <ul id="char-hits"></ul>
-      <p id="char-status" aria-live="polite"></p>
-    </section>
-
-    <section class="cell">
-      <h2>Budget</h2>
-      <div class="budget">
-        <label for="crystals">Crystals to spend</label>
-        <input id="crystals" name="crystals" type="number" min="0" max="232" value="30" inputmode="numeric">
-        <span></span>
-        <input id="slider" type="range" min="0" max="232" value="30" aria-label="Crystals to spend">
-        <span id="goal-label">Goal</span>
-        <fieldset class="seg" aria-labelledby="goal-label">
-          <input type="radio" name="goal" id="goal-dps" value="dps" checked><label for="goal-dps">Damage</label>
-          <input type="radio" name="goal" id="goal-tank" value="tank"><label for="goal-tank">Survival</label>
-          <input type="radio" name="goal" id="goal-both" value="balanced"><label for="goal-both">Both</label>
-        </fieldset>
-      </div>
-      <p class="note" id="owned-note" style="margin-top: var(--space-sm)"></p>
-      <p style="margin-top: var(--space-sm)"><button class="btn btn--quiet" id="clear-owned" type="button">Reset my board</button></p>
-    </section>
-
-    <section class="cell">
-      <h2>Result</h2>
-      <dl class="figures">
-        <div><dd id="r-dmg">0%</dd><dt>Damage dealt</dt></div>
-        <div><dd id="r-ehp">0%</dd><dt>Effective HP</dt></div>
-        <div><dd id="r-spent">0</dd><dt>Crystals spent</dt></div>
-      </dl>
-      <p id="gains"></p>
-    </section>
-
-    <section class="cell">
-      <h2>Buy order</h2>
-      <div class="register">
-        <table>
-          <thead><tr><th class="num">Step</th><th>Node</th><th class="num">Column</th><th class="num">Row</th><th class="num">Cost</th><th class="num">Total</th></tr></thead>
-          <tbody id="order"></tbody>
-        </table>
-      </div>
-    </section>
-
+  <div class="block foot">
     <details class="cell" id="stats">
       <summary><h2>Your stats</h2></summary>
       <p>Without any Ariel nodes. The best route depends on these: 1.5% Damage Boost is worth more at 50% than at 200%.</p>
@@ -85,7 +143,7 @@
 
     <details class="cell how">
       <summary><h2>How it is calculated</h2></summary>
-      <p>NCsoft has not published a formula. This is the community-tested one; both numbers are against a PvE boss.</p>
+      <p>NCsoft has not published a formula. This is the community-tested one.</p>
       <pre>damage = ( [ ((Attack × Weapon Boost) + Attack Bonus) × Attack Increase
              + PvE Attack + Boss Attack ] × skill coefficient
            + skill flat damage − target Defense × 0.1 )
@@ -96,9 +154,10 @@
         <li>All Damage Boost types add into one bucket. +1.5% on a bucket of 180% is 1.5 ÷ 180 = +0.83% damage. The more you have, the less each node gives.</li>
         <li>Damage Tolerance takes away from the boss’s bucket in the same way.</li>
         <li>Defense removes a flat 0.1 × Defense from every hit.</li>
-        <li>Critical Hit: about 1% chance per 15 points, up to the cap. A crit does 1.5× plus your Critical Damage Boost, minus the boss’s resist. At the cap, crit nodes are worth nothing.</li>
+        <li>Critical Hit: where an encounter has a measured figure, every 100 points short of it costs 10% crit chance, down from the 50% cap. A crit does 1.5× plus your Critical Damage Boost, minus the boss’s resist. At the cap, crit nodes are worth nothing.</li>
+        <li>Accuracy: every 100 points short of the encounter’s figure gets about 10% of your hits blocked, and a blocked hit loses about half its damage.</li>
         <li>HP adds HP ÷ your HP. Critical Hit Resist and MP are worth nothing against bosses, because bosses do not crit.</li>
-        <li>Accuracy and Evasion count for nothing unless you give them a value in Your stats.</li>
+        <li>Evasion counts for nothing unless you give it a value in Your stats.</li>
       </ul>
       <p>Effective HP is how much raw boss damage you survive: HP ÷ damage taken. Each node gets a value from these formulas; the planner then finds the connected group of nodes with the highest total value for your crystals.</p>
     </details>
@@ -109,49 +168,76 @@
 <script src="planner.js"></script>
 <script src="character.js"></script>
 <script>
-const P = Planner, $ = id => document.getElementById(id);
+const P = Planner, C = Character, $ = id => document.getElementById(id);
 const SHORT = { 'PvE Attack': 'Atk', 'Boss Attack': 'B.Atk', 'PvE Defense': 'Def', 'Boss Defense': 'B.Def', 'PvE Accuracy': 'Acc', 'PvE Evasion': 'Eva',
   'PvE Damage Boost': 'Dmg', 'Boss Damage Boost': 'B.Dmg', 'PvE Damage Tolerance': 'Tol', 'Boss Damage Tolerance': 'B.Tol',
   'Critical Hit': 'Crit', 'Critical Hit Resist': 'C.Res', HP: 'HP', MP: 'MP', Start: '' };
 const FIELDS = [
   ['attack', 'Attack, total (after weapon boost and attack increase)'],
   ['damage_boost_pct', 'Damage Boost % (generic + PvE + Boss)'],
-  ['crit_chance_pct', 'Crit chance against bosses %'],
-  ['crit_cap_pct', 'Crit chance cap %'],
+  ['crit_hit', 'Critical Hit'],
+  ['accuracy', 'Accuracy (PvE Accuracy included)'],
   ['crit_damage_boost_pct', 'Critical Damage Boost %'],
   ['hp', 'HP'],
   ['tolerance_pct', 'Damage Tolerance % (generic + PvE + Boss)'],
-  [null, 'Not shown in game. These are guesses; they mostly move the Survival route.'],
+  [null, 'Not shown in game. These are community figures and guesses; the last four mostly move the Survival route.'],
+  ['crit_cap_pct', 'Crit chance cap %'],
+  ['crit_pct_per_point', 'Crit chance % per Critical Hit point, unmeasured encounters'],
+  ['block_pct_per_point', 'Blocked chance % per Accuracy point short'],
+  ['block_loss_pct', 'Damage lost on a blocked hit %'],
+  ['boss_crit_dmg_resist_pct', 'Boss crit damage resist %'],
+  ['boss_tolerance_pct', 'Boss Damage Tolerance %'],
+  ['boss_defense', 'Boss Defense'],
   ['boss_hit', 'Boss hit size before your Defense'],
   ['boss_damage_boost_pct', 'Boss Damage Boost %'],
-  ['boss_tolerance_pct', 'Boss Damage Tolerance %'],
-  ['boss_crit_dmg_resist_pct', 'Boss crit damage resist %'],
-  ['crit_pct_per_point', 'Crit chance % per Critical Hit point'],
-  ['accuracy_dps_pct_per_point', 'Damage % per Accuracy point (0 = never blocked)'],
   ['evasion_pct_per_point', 'Damage avoided % per Evasion point (0 = ignore)'],
 ];
 const describe = n => `${n.stat} +${n.value}${n.pct ? '%' : ''}`;
+const signed = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%', rate = v => (v * 100).toFixed(1) + '%';
+const int = v => Math.round(v).toLocaleString('en-US'), cr = n => `${n} crystal${n === 1 ? '' : 's'}`;
+const gainsText = t => Object.keys(t).sort().map(k => `${k} +${+t[k].toFixed(1)}${k.includes('Damage') ? '%' : ''}`).join(', ');
+// table rows: each cell is text, or [text, class]
+const rows = (id, list) => $(id).replaceChildren(...list.map(({ cells, cls, hover }) => {
+  const tr = document.createElement('tr');
+  if (cls) tr.className = cls;
+  for (const c of cells) {
+    const td = document.createElement('td'), [text, k] = Array.isArray(c) ? c : [c, typeof c === 'number' ? 'num' : ''];
+    if (text instanceof Node) td.appendChild(text); else td.textContent = text;
+    if (k) td.className = k;
+    tr.appendChild(td);
+  }
+  if (hover) tr.addEventListener('mouseenter', hover);
+  return tr;
+}));
 
 // saved between visits; the page works without it
 let saved = {};
-try { saved = JSON.parse(localStorage.getItem('ariel-planner') || '{}'); } catch (e) {}
+try { saved = JSON.parse(localStorage.getItem('ariel-planner-2') || '{}'); } catch (e) {}
 const state = {
   crystals: Number.isInteger(saved.crystals) ? saved.crystals : 30,
   goal: P.GOALS[saved.goal] ? saved.goal : 'dps',
+  target: saved.target || 'open',
+  custom: Object.assign({ acc: 1000, crit: 1500 }, saved.custom),  // boss_* keys are filled from the build below
   build: Object.assign({}, P.DEFAULT_BUILD, saved.build),
   owned: new Set((saved.owned || []).filter(i => P.NODES[i] && i !== P.START)),
 };
 if (!P.connected(state.owned)) state.owned.clear();
-const save = () => { try { localStorage.setItem('ariel-planner', JSON.stringify({ ...state, owned: [...state.owned] })); } catch (e) {} };
+const save = () => { try { localStorage.setItem('ariel-planner-2', JSON.stringify({ ...state, owned: [...state.owned] })); } catch (e) {} };
+const CUSTOM_FIELDS = [['acc', 'Accuracy where parries stop (0 = never blocked)'], ['crit', 'Critical Hit that reaches the crit cap (0 = not known)'],
+  ['boss_tolerance_pct', 'Boss Damage Tolerance %'], ['boss_crit_dmg_resist_pct', 'Boss crit damage resist %'], ['boss_defense', 'Boss Defense'],
+  ['boss_hit', 'Boss hit size before your Defense'], ['boss_damage_boost_pct', 'Boss Damage Boost %']];
+for (const [k] of CUSTOM_FIELDS) if (!(state.custom[k] >= 0)) state.custom[k] = state.build[k];
+const CUSTOM = () => { const { acc, crit, ...over } = state.custom; return { id: 'custom', name: 'Custom encounter', acc, crit, over, note: 'Your own boss. These numbers replace the boss guesses in Your stats for this encounter only.' }; };
+const targets = () => [...P.TARGETS, CUSTOM()];
+const target = () => targets().find(t => t.id === state.target) || P.TARGETS[0];
 
 const tiles = P.NODES.map((n, i) => {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'node' + (i === P.START ? ' start' : '');
   b.style.gridColumn = n.x + 1; b.style.gridRow = n.y + 1;
-  b.dataset.cost = n.cost;
   if (i === P.START) { b.disabled = true; b.setAttribute('aria-label', 'Start'); b.textContent = 'Start'; }
   else {
-    const tell = () => hint(`${describe(n)}, ${n.cost} crystal${n.cost > 1 ? 's' : ''}`);
+    const tell = () => hint(`${describe(n)}, ${cr(n.cost)}`);
     b.addEventListener('mouseenter', tell); b.addEventListener('focus', tell);
     b.addEventListener('click', () => toggleOwned(i));
   }
@@ -178,44 +264,105 @@ function update() {
 }
 
 function render() {
-  const plan = P.plan(state.crystals, state.build, state.goal, state.owned);
+  const b = state.build, t = target(), mix = P.GOALS[state.goal];
+  const plan = P.plan(state.crystals, b, state.goal, state.owned, t);
+  const sNow = P.totals(state.owned), sAfter = P.totals(plan.chosen);
+  const sc = s => P.score(s, b, t), vs = (a, base) => a / base - 1;
+  const [d0, e0] = sc(sNow), [d1, e1] = sc(sAfter);
+  const ownedCost = P.spent(state.owned), spent = P.spent(plan.seq);
+
+  // board
   const step = new Map(plan.seq.map((i, k) => [i, k + 1]));
-  tiles.forEach((b, i) => {
+  tiles.forEach((el, i) => {
     if (i === P.START) return;
     const n = P.NODES[i], owned = state.owned.has(i), s = step.get(i);
-    b.className = 'node' + (owned ? ' owned' : s ? ' route' : '');
-    b.textContent = SHORT[n.stat];
-    if (s) { const tag = document.createElement('span'); tag.className = 'step'; tag.textContent = s; b.appendChild(tag); }
+    el.className = 'node' + (owned ? ' owned' : s ? ' route' : '');
+    el.textContent = SHORT[n.stat];
+    if (s) { const tag = document.createElement('span'); tag.className = 'step'; tag.textContent = s; el.appendChild(tag); }
     const pips = document.createElement('span'); pips.className = 'pips';  // cost: one tick per crystal
     for (let k = 0; k < n.cost; k++) pips.appendChild(document.createElement('i'));
-    b.appendChild(pips);
-    b.setAttribute('aria-label', `${describe(n)}, ${n.cost} crystal${n.cost > 1 ? 's' : ''}` + (owned ? ', owned' : s ? `, buy as step ${s}` : ''));
-    b.setAttribute('aria-pressed', owned);
+    el.appendChild(pips);
+    el.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (owned ? ', owned' : s ? `, buy as step ${s}` : ''));
+    el.setAttribute('aria-pressed', owned);
   });
-  const spent = plan.seq.reduce((a, i) => a + P.NODES[i].cost, 0), pct = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%';
-  $('r-dmg').textContent = pct(plan.damage);
-  $('r-ehp').textContent = pct(plan.ehp);
-  $('r-spent').textContent = `${spent} of ${state.crystals}`;
-  const back = ownedCost(), cr = n => `${n} crystal${n === 1 ? '' : 's'}`;
-  $('owned-note').textContent = state.owned.size
-    ? `You own ${state.owned.size} node${state.owned.size === 1 ? '' : 's'}, worth ${cr(back)}. The plan keeps them and adds ${cr(state.crystals)} on top.`
-    : 'No owned nodes marked. The plan starts from the centre.';
-  $('clear-owned').hidden = !state.owned.size;
-  $('clear-owned').textContent = `Reset my board and get ${cr(back)} back`;
-  const gain = P.totals(plan.seq);
-  $('gains').textContent = plan.seq.length
-    ? 'You gain: ' + Object.keys(gain).sort().map(k => `${k} +${+gain[k].toFixed(1)}${k.includes('Damage') ? '%' : ''}`).join(', ') + '.'
+
+  // what the plan adds, and the board as it stands
+  $('r-dmg').textContent = signed(vs(d1, d0)); $('r-ehp').textContent = signed(vs(e1, e0)); $('r-spent').textContent = `${spent} of ${state.crystals}`;
+  $('gains').textContent = plan.seq.length ? 'You gain: ' + gainsText(P.totals(plan.seq)) + '.'
     : state.crystals ? 'Nothing left on the board is worth buying for this goal.' : 'Enter how many crystals you have.';
-  let run = 0;
-  $('order').replaceChildren(...plan.seq.map((i, k) => {
-    const n = P.NODES[i], tr = document.createElement('tr');
-    run += n.cost;
-    if (n.cost >= 3) tr.className = 'major';
-    [[k + 1, 'num'], [describe(n), ''], [n.x + 1, 'num'], [n.y + 1, 'num'], [n.cost, 'num'], [run, 'num']].forEach(([text, cls]) => {
-      const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td);
-    });
-    tr.addEventListener('mouseenter', () => tiles[i].focus({ preventScroll: true }));
-    return tr;
+  $('n-dmg').textContent = signed(d0 - 1); $('n-ehp').textContent = signed(e0 - 1); $('n-spent').textContent = ownedCost;
+  $('now-figures').hidden = !state.owned.size;
+  $('clear-owned').disabled = !state.owned.size;  // always visible; nothing to clear when you own no nodes
+  $('owned-note').textContent = state.owned.size
+    ? `${state.owned.size} node${state.owned.size === 1 ? '' : 's'} owned, compared with an empty board: ${gainsText(sNow)}. The plan keeps them and adds ${cr(state.crystals)} on top.`
+    : 'No owned nodes yet. Load your character, or click the nodes you have bought.';
+  $('clear-owned').textContent = state.owned.size ? `Clear owned nodes and get ${cr(ownedCost)} back` : 'Clear owned nodes';
+  $('target-note').textContent = t.note;
+  $('custom-fields').hidden = state.target !== 'custom';
+
+  // one hit, three boards
+  const H = s => P.hit(s, b, t), h = [H({}), H(sNow), H(sAfter)], sco = [sc({}), [d0, e0], [d1, e1]];
+  rows('states', [
+    { cells: ['Average hit', ...h.map(x => int(x.average)).map(v => [v, 'num'])], cls: 'major' },
+    { cells: ['Normal hit', ...h.map(x => [int(x.normal), 'num'])] },
+    { cells: ['Critical hit', ...h.map(x => [int(x.crit), 'num'])] },
+    { cells: ['Crit chance', ...h.map(x => [rate(x.critRate), 'num'])] },
+    { cells: ['Hits blocked', ...h.map(x => [rate(x.blocked), 'num'])] },
+    { cells: ['Attack', ...h.map(x => [int(x.attack), 'num'])] },
+    { cells: ['Damage Boost, after the boss’s Tolerance', ...h.map(x => [rate(x.bucket - 1), 'num'])] },
+    { cells: ['Damage dealt, against an empty board', ...sco.map(x => [signed(x[0] - 1), 'num'])], cls: 'major' },
+    { cells: ['Effective HP, against an empty board', ...sco.map(x => [signed(x[1] - 1), 'num'])], cls: 'major' },
+  ]);
+
+  // the same route against every encounter
+  rows('enc', targets().filter(x => x.id !== 'custom' || state.target === 'custom').map(x => {
+    const a = P.hit(sNow, b, x), z = P.hit(sAfter, b, x);
+    return { cls: x.id === t.id ? 'current' : '', cells: [x.name + (x.id === t.id ? ' (planned for)' : ''), [rate(a.critRate), 'num'], [rate(z.critRate), 'num'],
+      [rate(a.blocked), 'num'], [rate(z.blocked), 'num'], [int(a.average), 'num'], [int(z.average), 'num'], [signed(z.average / a.average - 1), 'num']] };
+  }));
+
+  // what one node is worth, with the arithmetic
+  const eb = t.over ? Object.assign({}, b, t.over) : b;  // boss numbers for this encounter
+  const now = H(sNow), base = int(now.attack - 0.1 * eb.boss_defense) + (eb.boss_defense ? ' Attack after Defense' : ' Attack'), how = {
+    'PvE Attack': `3 ÷ ${base}`, 'Boss Attack': `3 ÷ ${base}`,
+    'PvE Damage Boost': `1.5 ÷ ${(now.bucket * 100).toFixed(1)} (100 + your Damage Boost − boss Tolerance)`, 'Boss Damage Boost': `1 ÷ ${(now.bucket * 100).toFixed(1)} (100 + your Damage Boost − boss Tolerance)`,
+    'Critical Hit': now.critRate * 100 >= b.crit_cap_pct ? 'You are at the crit cap here' : t.crit ? (b.crit_hit + (sNow['Critical Hit'] || 0) + 10 <= t.crit - b.crit_cap_pct * 10 ? `Still under ${int(t.crit - b.crit_cap_pct * 10)} Critical Hit, where crits start here` : '10 points add 1% crit chance') : `10 points add ${(10 * b.crit_pct_per_point).toFixed(2)}% crit chance`,
+    'PvE Accuracy': !t.acc ? 'This encounter does not block you' : now.blocked <= 0 ? 'You are never blocked here' : `5 points block ${(5 * b.block_pct_per_point).toFixed(1)}% fewer hits`,
+    'PvE Defense': `3 damage off a ${int(eb.boss_hit)} hit`, 'Boss Defense': `3 damage off a ${int(eb.boss_hit)} hit`,
+    'PvE Damage Tolerance': `1.5 ÷ ${(100 + eb.boss_damage_boost_pct - b.tolerance_pct - (sNow['PvE Damage Tolerance'] || 0) - (sNow['Boss Damage Tolerance'] || 0)).toFixed(1)} (the boss’s bucket)`,
+    'Boss Damage Tolerance': `1 ÷ ${(100 + eb.boss_damage_boost_pct - b.tolerance_pct - (sNow['PvE Damage Tolerance'] || 0) - (sNow['Boss Damage Tolerance'] || 0)).toFixed(1)} (the boss’s bucket)`,
+    HP: `100 ÷ ${int(b.hp + (sNow.HP || 0))} HP`, MP: 'No effect on damage or survival', 'Critical Hit Resist': 'Bosses do not crit',
+    'PvE Evasion': b.evasion_pct_per_point ? `5 points avoid ${(5 * b.evasion_pct_per_point).toFixed(2)}% of hits` : 'Not counted: no reliable data',
+  };
+  const worth = r => (mix[0] * r.damage + mix[1] * r.ehp) / r.costs[0];
+  rows('worth', P.nodeTypes(b, state.owned, t).sort((x, y) => worth(y) - worth(x)).map(r => ({ cls: worth(r) > 0 ? '' : 'faint', cells: [
+    describe(r), [r.costs.join(' or '), 'num'], [signed(r.damage), 'num'], [signed(r.ehp), 'num'], [signed(worth(r)), 'num'], how[r.stat] || ''] })));
+
+  // other ways to spend the same crystals, all measured against an empty board
+  const goalValue = set => { const s = P.score(P.totals(set), b, t); return mix[0] * Math.log(s[0]) + mix[1] * Math.log(s[1]); };
+  const ways = [{ name: 'This plan', chosen: plan.chosen, cost: spent }, ...P.baselines(state.crystals, b, state.goal, state.owned, t).map(x => ({ ...x, cost: P.spent(x.chosen, state.owned) }))];
+  if (state.owned.size) {
+    const fresh = P.plan(Math.min(232, state.crystals + ownedCost), b, state.goal, [], t);
+    ways.push({ name: `Reset the board and re-plan all ${cr(Math.min(232, state.crystals + ownedCost))}`, chosen: fresh.chosen, cost: P.spent(fresh.seq) });
+  }
+  const top = Math.max(...ways.map(w => goalValue(w.chosen)), 1e-12);
+  rows('alts', ways.map((w, k) => {
+    const s = P.score(P.totals(w.chosen), b, t), bar = document.createElement('span');
+    bar.className = 'bar'; bar.style.setProperty('--v', Math.max(0, goalValue(w.chosen) / top).toFixed(3));
+    return { cls: k === 0 ? 'current' : '', cells: [w.name, [w.cost, 'num'], [signed(s[0] - 1), 'num'], [signed(s[1] - 1), 'num'], [bar, 'track']] };
+  }));
+  const best = ways.slice(1).reduce((m, w) => Math.max(m, goalValue(w.chosen)), -Infinity), mine = goalValue(plan.chosen);
+  $('proof-note').textContent = !plan.seq.length ? 'There is nothing to buy yet, so there is nothing to compare.'
+    : `Planned for ${t.name.toLowerCase()}. Every figure below is computed from your stats; change them in Your stats and the tables follow.`
+      + (state.owned.size && best > mine + 1e-9 ? ' Resetting your board and re-planning everything would do better than adding to it: see the last table.' : '');
+
+  // buy order with the running gain
+  let run = 0; const sofar = new Set(state.owned);
+  rows('order', plan.seq.map((i, k) => {
+    const n = P.NODES[i]; run += n.cost; sofar.add(i);
+    const s = sc(P.totals(sofar));
+    return { cls: n.cost >= 3 ? 'major' : '', hover: () => tiles[i].focus({ preventScroll: true }),
+      cells: [k + 1, describe(n), n.x + 1, n.y + 1, n.cost, run, [signed(vs(s[0], d0)), 'num'], [signed(vs(s[1], e0)), 'num']] };
   }));
 }
 
@@ -230,9 +377,22 @@ document.querySelectorAll('input[name=goal]').forEach(r => {
   r.checked = r.value === state.goal;
   r.addEventListener('change', () => { state.goal = r.value; update(); });
 });
-const ownedCost = () => [...state.owned].reduce((a, i) => a + P.NODES[i].cost, 0);
+$('target').replaceChildren(...targets().map(t => new Option(t.name, t.id)));
+$('target').value = target().id;
+$('target').addEventListener('change', e => { state.target = e.target.value; update(); });
+$('custom-fields').replaceChildren(...CUSTOM_FIELDS.flatMap(([k, label]) => {
+  const l = document.createElement('label'), inp = document.createElement('input');
+  l.textContent = label; l.htmlFor = inp.id = 'c-' + k;
+  inp.type = 'number'; inp.step = 'any'; inp.min = 0; inp.value = state.custom[k];
+  inp.addEventListener('change', () => {
+    const v = parseFloat(inp.value);
+    if (!(v >= 0) || (v === 0 && k === 'boss_hit')) { inp.value = state.custom[k]; return; }  // boss hit is a divisor
+    state.custom[k] = v; update();
+  });
+  return [l, inp];
+}));
 // resetting the board gives its crystals back: they join the crystals to spend
-$('clear-owned').addEventListener('click', () => { const back = ownedCost(); state.owned = new Set(); setCrystals(state.crystals + back); });
+$('clear-owned').addEventListener('click', () => { const back = P.spent(state.owned); state.owned = new Set(); setCrystals(state.crystals + back); });
 
 function buildFields() {
   $('fields').replaceChildren(...FIELDS.flatMap(([k, label]) => {
@@ -252,11 +412,11 @@ function buildFields() {
 $('reset-stats').addEventListener('click', () => { state.build = Object.assign({}, P.DEFAULT_BUILD); buildFields(); update(); });
 
 // --- load a character from the official API (needs serve.py: the API refuses direct browser calls) ---
-const C = Character, charStatus = (text, warn) => { $('char-status').textContent = text; $('char-status').classList.toggle('warn', !!warn); };
+const charStatus = (text, warn) => { $('char-status').textContent = text; $('char-status').classList.toggle('warn', !!warn); };
 $('char-region').replaceChildren(...Object.entries(C.REGIONS).map(([v, label]) => new Option(label, v)));
 if (location.protocol === 'file:') {
   [...$('char-form').elements].forEach(el => { el.disabled = true; });
-  charStatus('To load a character, run "python3 serve.py" in this folder and open http://localhost:8787. Everything else works without it.');
+  charStatus('To load a character, run “docker compose up -d” in this folder and open http://localhost:8787. Everything else works without it.');
 }
 $('char-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -276,17 +436,17 @@ async function loadCharacter(hit) {
   $('char-hits').replaceChildren();
   try {
     const d = await C.load(hit, charStatus);
-    const { build, owned } = C.toBuild(d.info, d.items, d.boards, state.build.crit_pct_per_point);
+    const { build, owned } = C.toBuild(d.info, d.items, d.boards);
     if (!(build.attack > 0)) throw new Error('This character has no weapon equipped, so there is nothing to calculate from.');
     Object.assign(state.build, build);
     const set = new Set(owned.map(([x, y]) => P.POS.get(x + ',' + y)).filter(i => i !== undefined));
     if (P.connected(set)) state.owned = set;
     buildFields(); update();
     $('stats').open = true;
-    charStatus(`Loaded ${hit.name}: Attack ${build.attack}, Damage Boost ${build.damage_boost_pct}%, Damage Tolerance ${build.tolerance_pct}%, `
-      + `Critical Damage Boost ${build.crit_damage_boost_pct}%, crit chance ${build.crit_chance_pct}%. ${set.size} Ariel node${set.size === 1 ? '' : 's'} marked as owned. `
+    charStatus(`Loaded ${hit.name}: Attack ${int(build.attack)}, Damage Boost ${build.damage_boost_pct}%, Critical Hit ${int(build.crit_hit)}, Accuracy ${int(build.accuracy)}, `
+      + `Damage Tolerance ${build.tolerance_pct}%, Critical Damage Boost ${build.crit_damage_boost_pct}%. ${set.size} Ariel node${set.size === 1 ? '' : 's'} marked as owned. `
       + 'These are added up from gear, titles and boards. Pets, wings, skill passives and base stats are not in the data, and HP is not available: '
-      + 'check Attack, crit chance and HP against your stat sheet in Your stats.');
+      + 'check them against your stat sheet in Your stats.');
   } catch (err) { charStatus(err.message, true); }
 }
 

@@ -13,7 +13,7 @@
 .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-xs) var(--space-lg); padding-block: var(--space-lg) var(--space-md); }
 .top p { color: var(--color-muted); }
 
-.work { display: grid; grid-template-columns: max-content minmax(320px, 560px); justify-content: space-between; gap: var(--gap-columns); align-items: start; padding-block: var(--space-xs) var(--space-2xl); }
+.work { display: grid; grid-template-columns: max-content minmax(320px, 560px); justify-content: space-between; gap: var(--gap-columns); align-items: start; padding-block: var(--space-xs) var(--space-xl); }
 @media (max-width: 72rem) { .work { grid-template-columns: minmax(0, 1fr); } }
 
 /* the board */
@@ -65,7 +65,8 @@ input::placeholder { color: var(--color-muted); }
 .btn--quiet:hover { background: var(--color-paper-3); }
 
 .lookup { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
-.lookup input { flex: 1; min-width: 16ch; }
+.lookup select { width: 100%; }
+.lookup input { flex: 1; min-width: 12ch; }
 #char-hits { display: grid; gap: var(--space-2xs); max-height: 13rem; margin: var(--space-xs) 0 0; padding: 0; overflow-y: auto; list-style: none; }
 #char-hits:empty { display: none; }
 #char-hits .btn { width: 100%; border-radius: var(--radius-inner); }
@@ -98,7 +99,7 @@ th { position: sticky; top: 0; padding: var(--space-xs) var(--space-xs) var(--sp
 td { padding: var(--space-2xs) var(--space-xs) var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--line); color: var(--color-ink-2); }
 td.num, th.num { text-align: right; padding-right: var(--space-sm); font-variant-numeric: tabular-nums; }
 tr.major td { color: var(--color-ink); font-weight: 500; }
-tr.major td:nth-child(2) { color: var(--color-accent-2); }
+#order tr.major td:nth-child(2) { color: var(--color-accent-2); }
 tbody tr:hover td { background: var(--color-paper-3); }
 tbody:empty::after { content: "No nodes to buy yet."; display: block; padding: var(--space-sm) 0; color: var(--color-muted); }
 
@@ -112,4 +113,23 @@ pre { margin: var(--space-sm) 0; padding: var(--space-sm); overflow-x: auto; bor
 .how ul { margin: 0 0 var(--space-sm); padding-left: var(--space-md); max-width: 65ch; font-size: var(--text-sm); }
 .how li { margin-bottom: var(--space-2xs); }
 
-.busy #board, .busy .figures { opacity: 0.6; }
+/* the calculation: ruled tables, one panel each */
+.proof > h2 { font-size: var(--text-xl); }
+.proof > .note { margin: var(--space-2xs) 0 var(--space-md); max-width: 80ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); }
+.block.cell > h3 { margin-bottom: var(--space-sm); }
+.block.cell > .note { margin-top: var(--space-sm); max-width: 90ch; }
+.scroll { overflow-x: auto; }
+tr.current td { color: var(--color-ink); font-weight: 500; }
+tr.current td:first-child { box-shadow: inset 2px 0 0 var(--color-accent); padding-left: var(--space-xs); }
+tr.faint td { color: var(--color-muted); }
+td.track { width: 28%; min-width: 96px; }
+.bar { display: block; height: 6px; border-radius: var(--space-2xs); background: var(--color-accent-2); transform-origin: left center; transform: scaleX(var(--v, 0)); }
+tr.current .bar { background: var(--color-accent); }
+.foot { margin-block: var(--space-xl) var(--space-2xl); }
+#target { width: 100%; }
+#target-note { margin-top: var(--space-sm); }
+#owned-note, #clear-owned { margin-top: var(--space-sm); }
+#owned-note { color: var(--color-ink-2); font-size: var(--text-sm); }
+
+.busy #board, .busy .figures, .busy .proof { opacity: 0.6; }

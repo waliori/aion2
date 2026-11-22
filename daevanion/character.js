@@ -38,7 +38,7 @@
   }
 
   // -> { build: values for the planner, owned: [[x, y]] Ariel nodes already open }
-  function toBuild(info, items, boards, critPctPerPoint) {
+  function toBuild(info, items, boards) {
     const { flat, pct, weapon } = collect(info, items, boards);
     const f = k => flat[k] || 0, p = k => pct[k] || 0;
     const attack = ((weapon + f('Attack')) * (1 + p('Weapon Damage Boost') / 100) + f('Attack Bonus')) * (1 + p('Attack increase') / 100)
@@ -48,8 +48,8 @@
       damage_boost_pct: +(p('Damage Boost') + p('PvE Damage Boost') + p('Boss Damage Boost')).toFixed(2),
       tolerance_pct: +(p('Damage Tolerance') + p('PvE Damage Tolerance') + p('Boss Damage Tolerance')).toFixed(2),
       crit_damage_boost_pct: +p('Critical Damage Boost').toFixed(2),
-      // assumes the boss has no Critical Hit Resist: an upper estimate
-      crit_chance_pct: +(f('Critical Hit') * (1 + p('Critical Hit increase') / 100) * critPctPerPoint).toFixed(1),
+      crit_hit: Math.round(f('Critical Hit') * (1 + p('Critical Hit increase') / 100)),
+      accuracy: Math.round((f('Accuracy') + f('Accuracy Bonus')) * (1 + p('Accuracy increase') / 100) + f('PvE Accuracy')),
     };
     const owned = ((boards[ARIEL] && boards[ARIEL].nodeList) || []).filter(n => n.open && n.type === 'Stat').map(n => [n.col - 1, n.row - 1]);
     return { build, owned };
