@@ -1,0 +1,50 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "theme": "dusk",
+  "shape": "app screen",
+  "axes": "dark/grotesk-sans/cool",
+  "nav": "top bar",
+  "signature": "the Ariel board on slate: route to buy apricot, owned periwinkle, cost as ticks",
+  "sections": [
+   "board",
+   "character lookup",
+   "budget",
+   "result",
+   "buy order",
+   "stats",
+   "formula"
+  ],
+  "waived": [
+   "39b"
+  ],
+  "prompt": "Ariel board route planner",
+  "date": "2026-11-22"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "theme": "blueprint",
+  "shape": "app screen",
+  "axes": "mid/geometric-sans/neutral",
+  "nav": "top bar",
+  "signature": "the Ariel board drawn as a plan: route inked, owned hatched, cost as ticks",
+  "sections": [
+   "board",
+   "character lookup",
+   "budget",
+   "result",
+   "buy order",
+   "stats",
+   "formula"
+  ],
+  "waived": [
+   "39b"
+  ],
+  "prompt": "Ariel board route planner",
+  "date": "2026-11-22"
+ }
+]
