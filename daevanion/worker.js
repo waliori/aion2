@@ -1,6 +1,6 @@
 // Cloudflare Worker (see ../wrangler.toml): serves the planner's files and relays character lookups to the official AION 2 API.
 // Same job as serve.py. The relay exists because NCsoft's API refuses requests that come straight from a web page.
-const ALLOWED = ['https://aion2.plaync.com/api/character/', 'https://api-search.plaync.com/aion2global/search/'];
+const ALLOWED = ['https://aion2.plaync.com/api/character/', 'https://aion2.plaync.com/en-us/api/gameinfo/', 'https://api-search.plaync.com/aion2global/search/'];
 
 export default {
   async fetch(request, env) {

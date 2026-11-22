@@ -70,8 +70,13 @@
     return r.json();
   }
 
-  async function search(name, region) {
-    const d = await get(`${SEARCH}?keyword=${encodeURIComponent(name)}&page=1&size=20&localeInfo=en-US&region=${region}&serverId=`);
+  // the servers of a region: [{serverId, serverName, raceId}] (raceId 1 = Elyos, 2 = Asmodians)
+  async function servers(region) {
+    return (await get(`https://aion2.plaync.com/en-us/api/gameinfo/servers?lang=en-US&region=${region}`)).serverList || [];
+  }
+
+  async function search(name, region, serverId) {
+    const d = await get(`${SEARCH}?keyword=${encodeURIComponent(name)}&page=1&size=50&localeInfo=en-US&region=${region}&serverId=${serverId || ''}`);
     return (d.list || []).map(c => ({ ...c, name: c.name.replace(/<[^>]+>/g, ''), characterId: decodeURIComponent(c.characterId) }));
   }
 
@@ -99,6 +104,6 @@
     return openAriel(info, { [a.id]: await get(`${API}/daevanion/detail?${q}&boardId=${a.id}`) });
   }
 
-  const api = { REGIONS, search, load, loadBoard, toBuild, collect };
+  const api = { REGIONS, servers, search, load, loadBoard, toBuild, collect };
   if (typeof module !== 'undefined') module.exports = api; else root.Character = api;
 })(this);

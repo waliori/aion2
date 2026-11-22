@@ -25,6 +25,8 @@
       <label for="char-name">Your character</label>
       <form id="char-form" class="lookup">
         <select id="char-region" name="region" aria-label="Region"></select>
+        <select id="char-faction" name="faction" aria-label="Faction"></select>
+        <select id="char-server" name="server" aria-label="Server"></select>
         <input id="char-name" name="character" type="search" placeholder="Character name" required minlength="2" autocomplete="off">
         <button class="btn" type="submit">Load</button>
       </form>
@@ -55,12 +57,31 @@
 
   <div class="work">
     <section class="sheet" aria-label="Board">
-      <div class="boardwrap"><div id="board" class="well" role="group" aria-label="Ariel Daevanion board"></div></div>
+      <fieldset class="field mode">
+        <legend>A click on the board</legend>
+        <div class="seg">
+          <input type="radio" name="mode" id="mode-own" value="own" checked><label for="mode-own">Marks what I own</label>
+          <input type="radio" name="mode" id="mode-plan" value="plan"><label for="mode-plan">Builds my own plan</label>
+        </div>
+      </fieldset>
+      <div class="boardrow">
+        <div class="boardwrap"><div id="board" class="well" role="group" aria-label="Ariel Daevanion board"></div></div>
+        <div id="types" class="types" role="group" aria-label="Node types"></div>
+      </div>
       <p id="hint" aria-live="polite">Click a node you already bought to mark it as owned.</p>
+      <div id="mine-box" class="stack" hidden>
+        <p id="mine-note"></p>
+        <div class="lookup">
+          <button class="btn" id="cmp-mine" type="button">Compare with the recommended plan</button>
+          <button class="btn btn--quiet" id="clear-mine" type="button">Clear my plan</button>
+        </div>
+      </div>
       <ul class="key">
         <li><span class="swatch route"></span>Buy this</li>
+        <li><span class="swatch mine"></span>My own plan</li>
         <li><span class="swatch owned"></span>Already owned</li>
         <li><span class="pips"><i></i><i></i><i></i></span>One tick per crystal of cost</li>
+        <li>Click a type or a family beside the board to colour its nodes</li>
       </ul>
     </section>
 
@@ -176,6 +197,8 @@
           <h2>Another player.</h2>
           <form id="p-form" class="lookup">
             <select id="p-region" name="region" aria-label="Region"></select>
+            <select id="p-faction" name="faction" aria-label="Faction"></select>
+            <select id="p-server" name="server" aria-label="Server"></select>
             <input id="p-name" name="character" type="search" placeholder="Character name" aria-label="Character name" required minlength="2" autocomplete="off">
             <button class="btn btn--quiet" type="submit">Find</button>
           </form>
@@ -275,7 +298,7 @@ const FIELDS = [
 const CUSTOM_FIELDS = [['acc', 'Accuracy where parries stop (0 = never blocked)'], ['crit', 'Critical Hit that reaches the crit cap (0 = not known)'],
   ['boss_tolerance_pct', 'Boss Damage Tolerance %'], ['boss_crit_dmg_resist_pct', 'Boss crit damage resist %'], ['boss_defense', 'Boss Defense'],
   ['boss_hit', 'Boss hit size before your Defense'], ['boss_damage_boost_pct', 'Boss Damage Boost %']];
-const SIDES = { mine: 'My board now', plan: 'This plan', other: 'Another plan', player: 'Another player' };
+const SIDES = { mine: 'My board now', plan: 'This plan', own: 'My own plan', other: 'Another plan', player: 'Another player' };
 const GOAL_NAMES = { dps: 'Damage', tank: 'Survival', balanced: 'Both' };
 const fx = (v, d) => dec((+v).toFixed(d));
 const describe = n => `${T(n.stat)} +${dec(n.value)}${n.pct ? '%' : ''}`;
@@ -316,11 +339,13 @@ const state = {
   build: Object.assign({}, P.DEFAULT_BUILD, saved.build),
   owned: new Set((saved.owned || []).filter(i => P.NODES[i] && i !== P.START)),
   parts: saved.parts || null,  // how the loaded character's Attack was added up
+  mode: saved.mode === 'plan' ? 'plan' : 'own',  // what a click on the board does
+  manual: new Set((saved.manual || []).filter(i => P.NODES[i] && i !== P.START)),  // the plan the player builds by hand, on top of owned
   cmp: Object.assign({ a: 'mine', b: 'plan', other: { crystals: 60, goal: 'tank', target: 'open' }, player: { name: '', nodes: [] } }, saved.cmp),
 };
 if (!P.connected(state.owned)) state.owned.clear();
 for (const [k] of CUSTOM_FIELDS) if (!(state.custom[k] >= 0)) state.custom[k] = state.build[k];
-const save = () => { try { localStorage.setItem('ariel-planner-2', JSON.stringify({ ...state, owned: [...state.owned] })); } catch (e) {} };
+const save = () => { try { localStorage.setItem('ariel-planner-2', JSON.stringify({ ...state, owned: [...state.owned], manual: [...state.manual] })); } catch (e) {} };
 const CUSTOM = () => { const { acc, crit, ...over } = state.custom; return { id: 'custom', name: 'Custom encounter', acc, crit, over, note: 'Your own boss, set under My stats.' }; };
 const targets = () => [...P.TARGETS, CUSTOM()];
 const targetById = id => targets().find(t => t.id === id) || P.TARGETS[0];
@@ -343,20 +368,74 @@ const tiles = P.NODES.map((n, i) => {
   else {
     const tell = () => hint(`${describe(n)}, ${cr(n.cost)}`);
     b.addEventListener('mouseenter', tell); b.addEventListener('focus', tell);
-    b.addEventListener('click', () => toggleOwned(i));
+    b.addEventListener('click', () => (state.mode === 'plan' ? toggleManual(i) : toggleOwned(i)));
   }
   $('board').appendChild(b);
   return b;
 });
 
+// node types beside the board, in three families with a shade per kind of stat.
+// Click a type (or a family) to light up its nodes; hovering previews it.
+// Order and shade follow each stat's weight in the damage formula: multipliers first (darkest), then flat amounts,
+// then the stats that only matter under a condition, then the ones that do nothing against bosses (lightest).
+const FAMILIES = [
+  ['Offensive', 'off', [['PvE Damage Boost', 1], ['Boss Damage Boost', 1], ['Critical Hit', 2], ['PvE Attack', 3], ['Boss Attack', 3], ['PvE Accuracy', 4]]],
+  ['Defensive', 'def', [['PvE Damage Tolerance', 1], ['Boss Damage Tolerance', 1], ['PvE Defense', 2], ['Boss Defense', 2], ['PvE Evasion', 3], ['Critical Hit Resist', 4]]],
+  ['Resources', 'res', [['HP', 1], ['MP', 2]]],
+];
+const FAM = {};  // stat -> 'off-2': the family and its shade
+for (const [, key, stats] of FAMILIES) for (const [stat, shade] of stats) FAM[stat] = key + '-' + shade;
+tiles.forEach((tile, i) => { if (FAM[P.NODES[i].stat]) tile.dataset.fam = FAM[P.NODES[i].stat]; });
+const litTypes = new Set(); let hoverTypes = [];
+function paintTypes() {
+  const on = new Set([...litTypes, ...hoverTypes]);
+  $('board').classList.toggle('filtering', on.size > 0);
+  tiles.forEach((tile, i) => tile.classList.toggle('lit', on.has(P.NODES[i].stat)));
+  document.querySelectorAll('#types .type').forEach(b => b.setAttribute('aria-pressed', litTypes.has(b.dataset.stat)));
+  document.querySelectorAll('#types .family').forEach(b => b.setAttribute('aria-pressed', b.dataset.stats.split('|').every(x => litTypes.has(x))));
+}
+const peeker = (b, stats, text) => {
+  const peek = () => { hoverTypes = stats; paintTypes(); hint(text); }, leave = () => { hoverTypes = []; paintTypes(); };
+  b.addEventListener('mouseenter', peek); b.addEventListener('focus', peek); b.addEventListener('mouseleave', leave); b.addEventListener('blur', leave);
+};
+$('types').replaceChildren(...FAMILIES.flatMap(([name, key, stats]) => {
+  const names = stats.map(x => x[0]), count = P.NODES.filter(n => names.includes(n.stat)).length;
+  const head = el('button', 'family', T(name)), famText = T('{name}: {nodes}', { name: T(name), nodes: nodesText(count) });
+  head.type = 'button'; head.dataset.stats = names.join('|'); head.dataset.fam = key + '-2'; head.title = famText; head.setAttribute('aria-label', famText);
+  head.addEventListener('click', () => { const all = names.every(x => litTypes.has(x)); for (const x of names) all ? litTypes.delete(x) : litTypes.add(x); paintTypes(); });
+  peeker(head, names, famText);
+  return [head, ...stats.map(([stat]) => {
+    const nodes = P.NODES.filter(n => n.stat === stat), total = nodes.reduce((a, n) => a + n.value, 0), pct = nodes[0].pct ? '%' : '';
+    const b = el('button', 'type'), full = T('{name}: {nodes}, +{total} in total', { name: T(stat), nodes: nodesText(nodes.length), total: dec(total) + pct });
+    b.type = 'button'; b.dataset.stat = stat; b.dataset.fam = FAM[stat]; b.setAttribute('aria-label', full); b.title = full;
+    b.append(el('span', 'chip', SHORT[stat]), el('span', 'num', nodes.length));
+    b.addEventListener('click', () => { if (!litTypes.delete(stat)) litTypes.add(stat); paintTypes(); });
+    peeker(b, [stat], full);
+    return b;
+  })];
+}));
+
 function hint(text, warn) { $('hint').textContent = text; $('hint').classList.toggle('warn', !!warn); }
 
+// the hand-made plan only keeps nodes that are not owned and still hang together with the owned board
+function pruneManual() {
+  const all = new Set([...state.owned, ...state.manual]).add(P.START);
+  state.manual = new Set(P.order(all, state.owned).filter(i => state.manual.has(i)));
+}
 function toggleOwned(i) {
   const next = new Set(state.owned);
   const adding = !next.delete(i);
   if (adding) next.add(i);
   if (!P.connected(next)) return hint(T(adding ? 'Mark a node next to one you own first.' : 'Unmark the nodes further out first.'), true);
-  state.owned = next; update();
+  state.owned = next; pruneManual(); update();
+}
+function toggleManual(i) {
+  if (state.owned.has(i)) return hint(T('You already own this node.'), true);
+  const next = new Set(state.manual);
+  const adding = !next.delete(i);
+  if (adding) next.add(i);
+  if (!P.connected(new Set([...state.owned, ...next]))) return hint(T(adding ? 'Pick a node next to your board or your plan first.' : 'Remove the nodes further out first.'), true);
+  state.manual = next; update();
 }
 
 let timer;
@@ -382,15 +461,25 @@ function render() {
   tiles.forEach((tile, i) => {
     if (i === P.START) return;
     const n = P.NODES[i], owned = state.owned.has(i), s = step.get(i);
-    tile.className = 'node' + (owned ? ' owned' : s ? ' route' : '');
+    const planning = state.mode === 'plan', mine = planning && state.manual.has(i);  // while planning by hand the recommendation is hidden
+    tile.className = 'node' + (owned ? ' owned' : mine ? ' mine' : s && !planning ? ' route' : '');
     tile.textContent = SHORT[n.stat];
-    if (s) tile.appendChild(el('span', 'step', s));
+    if (s && !planning && !owned) tile.appendChild(el('span', 'step', s));
     const pips = el('span', 'pips');  // cost: one tick per crystal
     for (let k = 0; k < n.cost; k++) pips.appendChild(el('i'));
     tile.appendChild(pips);
-    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (owned ? T(', owned') : s ? T(', buy as step {s}', { s }) : ''));
+    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (owned ? T(', owned') : mine ? T(', in my plan') : s && !planning ? T(', buy as step {s}', { s }) : ''));
     tile.setAttribute('aria-pressed', owned);
   });
+  paintTypes();  // render() rebuilt the tiles' classes
+  // the hand-made plan, measured like the recommended one: against the board you own now
+  const ownSet = new Set([...state.owned, ...state.manual]).add(P.START), ownCost = P.spent(state.manual), sOwn = sc(P.totals(ownSet));
+  $('mine-box').hidden = state.mode !== 'plan';
+  $('mine-note').textContent = !state.manual.size ? T('Click nodes next to your board to build your own plan. The recommended route is hidden while you do.')
+    : T('Your own plan: {nodes} for {spent} of your {crystals}. Damage dealt {d}, effective HP {e}.', { nodes: nodesText(state.manual.size), spent: cr(ownCost), crystals: cr(state.crystals), d: signed(vs(sOwn[0], d0)), e: signed(vs(sOwn[1], e0)) })
+      + (ownCost > state.crystals ? ' ' + T('That is {n} more than you have.', { n: cr(ownCost - state.crystals) }) : '');
+  $('mine-note').classList.toggle('warn', ownCost > state.crystals);
+  $('clear-mine').disabled = $('cmp-mine').disabled = !state.manual.size;
   $('target-note').textContent = T(t.note);
 
   // --- Plan ---
@@ -495,7 +584,7 @@ function render() {
   // --- Compare ---
   const need = k => state.cmp.a === k || state.cmp.b === k, o = state.cmp.other;
   $('cfg-other').hidden = !need('other'); $('cfg-player').hidden = !need('player');
-  const sets = { mine: new Set(state.owned).add(P.START), plan: plan.chosen,
+  const sets = { mine: new Set(state.owned).add(P.START), plan: plan.chosen, own: ownSet,
     player: new Set(state.cmp.player.nodes.filter(i => P.NODES[i])).add(P.START) };
   if (need('other')) {
     const key = JSON.stringify([o, b, [...state.owned], state.custom]);
@@ -547,8 +636,14 @@ document.querySelectorAll('input[name=goal]').forEach(r => {
 const targetOptions = () => targets().map(t => new Option(T(t.name), t.id));
 $('target').replaceChildren(...targetOptions()); $('target').value = targetById(state.target).id;
 $('target').addEventListener('change', e => { state.target = e.target.value; update(); });
+document.querySelectorAll('input[name=mode]').forEach(r => {
+  r.checked = r.value === state.mode;
+  r.addEventListener('change', () => { state.mode = r.value; update(); });
+});
+$('clear-mine').addEventListener('click', () => { state.manual = new Set(); update(); });
+$('cmp-mine').addEventListener('click', () => { state.cmp.a = 'own'; state.cmp.b = 'plan'; $('cmp-a').value = 'own'; $('cmp-b').value = 'plan'; showTab('compare'); update(); });
 // clearing the board gives its crystals back: they join the crystals to spend
-$('clear-owned').addEventListener('click', () => { const back = P.spent(state.owned); state.owned = new Set(); setCrystals(state.crystals + back); });
+$('clear-owned').addEventListener('click', () => { const back = P.spent(state.owned); state.owned = new Set(); pruneManual(); setCrystals(state.crystals + back); });
 
 // number fields for the stats and the custom encounter
 function fieldGrid(id, list, store, divisors) {
@@ -585,9 +680,26 @@ const offline = location.protocol === 'file:';
 // messages from character.js arrive in English; put them in the page's language
 const said = msg => { const m = /^Reading gear (\d+) of (\d+)…$/.exec(msg) || /^The AION 2 site answered (\d+)\.$/.exec(msg);
   return !m ? T(msg) : m.length === 3 ? T('Reading gear {a} of {b}…', { a: m[1], b: m[2] }) : T('The AION 2 site answered {code}.', { code: m[1] }); };
-function lookup(form, region, name, hitsId, status, onPick) {
+const FACTIONS = { 1: 'Elyos', 2: 'Asmodians' };  // the game's race ids
+function lookup(form, region, faction, server, name, hitsId, status, onPick) {
   const say = (text, warn) => { $(status).textContent = text; $(status).classList.toggle('warn', !!warn); };
   $(region).replaceChildren(...Object.entries(C.REGIONS).map(([v, label]) => new Option(T(label), v)));
+  $(faction).replaceChildren(new Option(T('Both factions'), ''), ...Object.entries(FACTIONS).map(([v, label]) => new Option(T(label), v)));
+  // the region's servers. Each server belongs to one faction, so choosing a faction shortens the list.
+  // "All servers" stays if the list cannot be read.
+  let list = [];
+  const showServers = () => {
+    const f = $(faction).value, keep = $(server).value, shown = list.filter(x => !f || String(x.raceId) === f).sort((a, b) => a.serverName.localeCompare(b.serverName));
+    $(server).replaceChildren(new Option(T('All servers'), ''), ...shown.map(x => new Option(x.serverName, x.serverId)));
+    if (shown.some(x => String(x.serverId) === keep)) $(server).value = keep;  // keep the choice when it still fits the faction
+  };
+  const fillServers = async () => {
+    const reg = $(region).value;
+    list = []; showServers();
+    if (offline) return;
+    try { const got = await C.servers(reg); if ($(region).value === reg) { list = got; showServers(); } } catch (e) {}  // ignore a late answer for another region
+  };
+  $(region).addEventListener('change', fillServers); $(faction).addEventListener('change', showServers); fillServers();
   if (offline) {
     [...$(form).elements].forEach(x => { x.disabled = true; });
     say(T('To load a character, run “docker compose up -d” in this folder and open http://localhost:8787. Everything else works without it.'));
@@ -596,10 +708,14 @@ function lookup(form, region, name, hitsId, status, onPick) {
     e.preventDefault();
     $(hitsId).replaceChildren(); say(T('Searching…'));
     try {
-      const hits = await C.search($(name).value.trim(), $(region).value);
-      say(T(hits.length ? 'Pick the character.' : 'No character with that name in this region.'));
+      // faction and server are both optional: a server narrows the search itself, a faction alone filters the region's results
+      const f = $(faction).value;
+      let hits = await C.search($(name).value.trim(), $(region).value, $(server).value);
+      if (f) hits = hits.filter(h => String(h.race) === f);
+      hits.sort((a, b) => b.level - a.level || a.name.localeCompare(b.name));
+      say(T(hits.length ? 'Pick the character.' : 'No character with that name here. Try fewer filters.'));
       $(hitsId).replaceChildren(...hits.map(h => {
-        const li = el('li'), b = el('button', 'btn btn--quiet', T('{name}, {server}, level {level}', { name: h.name, server: h.serverName, level: h.level }));
+        const li = el('li'), b = el('button', 'btn btn--quiet', T('{name}, {server}, {faction}, level {level}', { name: h.name, server: h.serverName, faction: T(FACTIONS[h.race] || ''), level: h.level }));
         b.type = 'button';
         b.addEventListener('click', async () => { $(hitsId).replaceChildren(); try { await onPick(h, say); } catch (err) { say(said(err.message), true); } });
         li.appendChild(b); return li;
@@ -609,19 +725,19 @@ function lookup(form, region, name, hitsId, status, onPick) {
   return say;
 }
 const toSet = coords => new Set(coords.map(([x, y]) => P.POS.get(x + ',' + y)).filter(i => i !== undefined));
-lookup('char-form', 'char-region', 'char-name', 'char-hits', 'char-status', async (hit, say) => {
+lookup('char-form', 'char-region', 'char-faction', 'char-server', 'char-name', 'char-hits', 'char-status', async (hit, say) => {
   const d = await C.load(hit, msg => say(said(msg)));
   const { build, parts, owned } = C.toBuild(d.info, d.items, d.boards);
   if (!(build.attack > 0)) throw new Error('This character has no weapon equipped, so there is nothing to calculate from.');
   Object.assign(state.build, build); state.parts = parts;
   const set = toSet(owned);
-  if (P.connected(set)) state.owned = set;
+  if (P.connected(set)) { state.owned = set; pruneManual(); }
   buildFields(); update();
   say(T('Loaded {name}: Attack {attack}, Damage Boost {boost}%, Critical Hit {crit}, Accuracy {acc}, Damage Tolerance {tol}%, Critical Damage Boost {cdb}%. {nodes} marked as owned. Added up from gear, titles and boards; pets, wings, skill passives and base stats are not in the data, and HP is not available. Check them under My stats.',
     { name: hit.name, attack: int(build.attack), boost: dec(build.damage_boost_pct), crit: int(build.crit_hit), acc: int(build.accuracy), tol: dec(build.tolerance_pct), cdb: dec(build.crit_damage_boost_pct), nodes: T(set.size === 1 ? '{n} Ariel node' : '{n} Ariel nodes', { n: set.size }) }));
 });
 const openNodes = n => T(n === 1 ? '{name}: {n} Ariel node open.' : '{name}: {n} Ariel nodes open.', { name: state.cmp.player.name, n });
-const playerSay = lookup('p-form', 'p-region', 'p-name', 'p-hits', 'p-status', async (hit, say) => {
+const playerSay = lookup('p-form', 'p-region', 'p-faction', 'p-server', 'p-name', 'p-hits', 'p-status', async (hit, say) => {
   say(T('Reading their Ariel board…'));
   const set = toSet(await C.loadBoard(hit));
   state.cmp.player = { name: `${hit.name}, ${hit.serverName}`, nodes: [...set] };

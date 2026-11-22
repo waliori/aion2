@@ -21,6 +21,19 @@ const FR = {
   'Buy this': 'À acheter', 'Already owned': 'Déjà possédé', 'One tick per crystal of cost': 'Un point par cristal de coût',
   Views: 'Vues', Plan: 'Plan', Why: 'Pourquoi', Compare: 'Comparer', 'My stats': 'Mes stats',
 
+  'Node types': 'Types de nœuds', Offensive: 'Offensif', Defensive: 'Défensif', Resources: 'Ressources', '{name}: {nodes}': '{name} : {nodes}',
+  'Click a type or a family beside the board to colour its nodes': 'Cliquez sur un type ou une famille à côté du plateau pour colorer ses nœuds',
+  // --- planning by hand ---
+  'A click on the board': 'Un clic sur le plateau', 'Marks what I own': 'Marque ce que je possède', 'Builds my own plan': 'Construit mon propre plan',
+  'My own plan': 'Mon propre plan', 'Compare with the recommended plan': 'Comparer avec le plan recommandé', 'Clear my plan': 'Effacer mon plan',
+  'You already own this node.': 'Vous possédez déjà ce nœud.', ', in my plan': ', dans mon plan',
+  'Pick a node next to your board or your plan first.': 'Choisissez d’abord un nœud voisin de votre plateau ou de votre plan.',
+  'Remove the nodes further out first.': 'Retirez d’abord les nœuds plus éloignés.',
+  'Click nodes next to your board to build your own plan. The recommended route is hidden while you do.': 'Cliquez sur des nœuds voisins de votre plateau pour construire votre propre plan. Le chemin recommandé est masqué pendant ce temps.',
+  'Your own plan: {nodes} for {spent} of your {crystals}. Damage dealt {d}, effective HP {e}.': 'Votre propre plan : {nodes} pour {spent} sur vos {crystals}. Dégâts infligés {d}, PV effectifs {e}.',
+  'That is {n} more than you have.': 'C’est {n} de plus que ce que vous avez.',
+  '{name}: {nodes}, +{total} in total': '{name} : {nodes}, +{total} au total',
+
   // --- Plan tab ---
   'What this plan adds.': 'Ce que ce plan apporte.', 'Damage dealt': 'Dégâts infligés', 'Effective HP': 'PV effectifs', 'Crystals spent': 'Cristaux dépensés',
   'Your board now.': 'Votre plateau actuel.', 'Crystals in it': 'Cristaux investis', 'Clear owned nodes': 'Effacer les nœuds possédés',
@@ -179,6 +192,9 @@ const FR = {
     "dégâts = ( [ ((ATQ × Boost d’arme) + ATQ supplémentaire) × Augmentation de l’ATQ\n             + ATQ JcE + ATQ contre les boss ] × coefficient de compétence\n           + dégâts fixes de compétence − DÉF de la cible × 0,1 )\n       × (1 + Boost de DGT + Boost JcE + Boost boss − Tolérance de la cible)\n       × critique × double × face/dos",
 
   // --- loading characters ---
+  Server: 'Serveur', Faction: 'Faction', 'All servers': 'Tous les serveurs', 'Both factions': 'Les deux factions', Elyos: 'Élyséens', Asmodians: 'Asmodiens',
+  'No character with that name here. Try fewer filters.': 'Aucun personnage de ce nom ici. Essayez avec moins de filtres.',
+  '{name}, {server}, {faction}, level {level}': '{name}, {server}, {faction}, niveau {level}',
   Europe: 'Europe', 'North America East': 'Amérique du Nord Est', 'North America West': 'Amérique du Nord Ouest', 'South America': 'Amérique du Sud', Asia: 'Asie',
   'To load a character, run “docker compose up -d” in this folder and open http://localhost:8787. Everything else works without it.':
     'Pour charger un personnage, lancez « docker compose up -d » dans ce dossier et ouvrez http://localhost:8787. Tout le reste fonctionne sans cela.',

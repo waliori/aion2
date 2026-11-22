@@ -9,7 +9,7 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-ALLOWED = ("https://aion2.plaync.com/api/character/", "https://api-search.plaync.com/aion2global/search/")
+ALLOWED = ("https://aion2.plaync.com/api/character/", "https://aion2.plaync.com/en-us/api/gameinfo/", "https://api-search.plaync.com/aion2global/search/")
 PORT = 8787
 
 
