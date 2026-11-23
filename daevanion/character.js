@@ -10,13 +10,15 @@
   // from the character, never hard-coded. The first four are the class boards, Ariel (PvE) is the fifth, Azphel (PvP) the sixth.
   const KIND = { 1: 'nezekan', 2: 'zikel', 3: 'vaizel', 4: 'triniel', 5: 'ariel', 6: 'azphel' };
   const boardList = info => ((info.daevanion && info.daevanion.boardList) || []).map(b => ({ id: b.id, kind: KIND[b.id % 10] || '' }));
-  const openNodes = (info, boards, kind) => {
-    const a = boardList(info).find(b => b.kind === kind);
-    return ((a && boards[a.id] && boards[a.id].nodeList) || []).filter(n => n.open && (n.type === 'Stat' || n.type === 'SkillLevel')).map(n => [n.col - 1, n.row - 1]);
-  };
+  // 'class' is the four class boards planned as one: the second board's columns start at 100, the third's at 200, the fourth's at 300
+  const CLASS = ['nezekan', 'zikel', 'vaizel', 'triniel'], kindsOf = kind => (kind === 'class' ? CLASS : [kind]);
+  const openNodes = (info, boards, kind) => kindsOf(kind).flatMap((k, sub) => {
+    const a = boardList(info).find(b => b.kind === k);
+    return ((a && boards[a.id] && boards[a.id].nodeList) || []).filter(n => n.open && (n.type === 'Stat' || n.type === 'SkillLevel')).map(n => [n.col - 1 + 100 * sub, n.row - 1]);
+  });
   const num = v => parseFloat(String(v).replace(/[+,]/g, ''));
 
-  // -> { flat: {name: sum}, pct: {name: sum}, weapon: average weapon Attack }, leaving out the board named in `skip`
+  // -> { flat: {name: sum}, pct: {name: sum}, weapon: average weapon Attack }, leaving out the boards named in `skip`
   function collect(info, items, boards, skip) {
     const out = { flat: {}, pct: {}, weapon: 0 };
     const add = (name, v) => {
@@ -39,7 +41,7 @@
       }
     }
     for (const t of (info.title && info.title.titleList) || []) for (const s of [...(t.equipStatList || []), ...(t.statList || [])]) addDesc(s.desc);
-    for (const b of boardList(info)) if (b.kind !== skip) for (const s of (boards[b.id] && boards[b.id].openStatEffectList) || []) addDesc(s.desc);
+    for (const b of boardList(info)) if (!skip.includes(b.kind)) for (const s of (boards[b.id] && boards[b.id].openStatEffectList) || []) addDesc(s.desc);
     for (const s of (info.stat && info.stat.statList) || []) for (const d of s.statSecondList || []) addDesc(d);  // "Attack increase +3.2%"
     return out;
   }
@@ -49,7 +51,7 @@
   // them itself; withBoard keeps them in, for an opponent, who fights with their board.
   function toBuild(info, items, boards, kind, withBoard) {
     kind = kind || 'ariel';
-    const { flat, pct, weapon } = collect(info, items, boards, withBoard ? null : kind);  // null skips nothing
+    const { flat, pct, weapon } = collect(info, items, boards, withBoard ? [] : kindsOf(kind));
     const f = k => flat[k] || 0, p = k => pct[k] || 0, up = (v, k) => v * (1 + p(k) / 100), r2 = v => +v.toFixed(2);
     const base = up((weapon + f('Attack')) * (1 + p('Weapon Damage Boost') / 100) + f('Attack Bonus'), 'Attack increase');
     const crit = up(f('Critical Hit'), 'Critical Hit increase'), accuracy = up(f('Accuracy') + f('Accuracy Bonus'), 'Accuracy increase');
@@ -113,12 +115,12 @@
     return { info, items, boards };
   }
 
-  // just the open nodes of one board of a character, as [x, y]: two calls, for comparing boards
+  // just the open nodes of one board of a character (or of the four class boards), as [x, y], for comparing boards
   async function loadBoard(hit, kind) {
     const q = `lang=en-US&characterId=${encodeURIComponent(hit.characterId)}&serverId=${hit.serverId}&region=${hit.region}`;
-    const info = await get(`${API}/info?${q}`), a = boardList(info).find(b => b.kind === (kind || 'ariel'));
-    if (!a) return [];
-    return openNodes(info, { [a.id]: await get(`${API}/daevanion/detail?${q}&boardId=${a.id}`) }, a.kind);
+    const info = await get(`${API}/info?${q}`), list = boardList(info).filter(b => kindsOf(kind || 'ariel').includes(b.kind)), boards = {};
+    for (const [k, d] of (await Promise.all(list.map(b => get(`${API}/daevanion/detail?${q}&boardId=${b.id}`)))).entries()) boards[list[k].id] = d;
+    return openNodes(info, boards, kind || 'ariel');
   }
 
   // 'cleric', 'spiritmaster', ...: the class as the planner names it

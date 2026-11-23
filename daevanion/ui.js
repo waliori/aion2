@@ -253,16 +253,16 @@ const UI = {
   },
 };
 
-// ------------------------------------------------------------------ the four class boards: general stats and skill levels
+// ------------------------------------------------------------------ the four class boards, planned as one: general stats and skill levels
 // Scored like Ariel (PvE, same encounters), with the general stats in place of the PvE ones. Built from the Ariel texts.
 const GENERAL_SHORT = { 'Attack Bonus': 'Atk', 'Damage Boost': 'Dmg', 'Critical Hit': 'Crit', 'Critical Damage Boost': 'C.Dmg', 'Combat Speed': 'Spd', 'Cooldown Reduction': 'CDR', 'Multi-hit Chance': 'Multi',
   'Damage Tolerance': 'Tol', 'Defense Bonus': 'Def', 'Critical Hit Resist': 'C.Res', 'Critical Damage Tolerance': 'C.Tol', 'Multi-hit Resist': 'M.Res', HP: 'HP', MP: 'MP' };
 const GENERAL_SHORT_FR = { 'Attack Bonus': 'ATQ', 'Damage Boost': 'DGT', 'Critical Hit': 'CRIT', 'Critical Damage Boost': 'DGT.C', 'Combat Speed': 'VIT', 'Cooldown Reduction': 'Rech', 'Multi-hit Chance': 'Multi',
   'Damage Tolerance': 'Tol', 'Defense Bonus': 'DÉF', 'Critical Hit Resist': 'R.CRIT', 'Critical Damage Tolerance': 'Tol.C', 'Multi-hit Resist': 'R.Multi', HP: 'PV', MP: 'PM' };
-for (const [id, name] of [['nezekan', 'Nezekan'], ['zikel', 'Zikel'], ['vaizel', 'Vaizel'], ['triniel', 'Triniel']]) UI[id] = Object.assign({}, UI.ariel, {
-  store: id + '-planner-1', label: name, classBoard: true,
-  title: name + ' board route planner', heading: name + ' board route planner.',
-  tagline: L('A class board: general stats and skill levels. Stats are scored in PvE; skills are not scored, tick the ones you want. Orange is what to buy, green is what you own.'),
+UI.class = Object.assign({}, UI.ariel, {
+  store: 'class-planner-1', label: L('Class boards'), classBoard: true,
+  title: L('Class boards route planner'), heading: L('Class boards route planner.'),
+  tagline: L('Nezekan, Zikel, Vaizel and Triniel, paid from one pool of 416 points and planned together. Stats are scored in PvE; skill levels are not scored, tick the ones you want. Square icons are active skills, round ones passives.'),
   short: GENERAL_SHORT, shortFr: GENERAL_SHORT_FR,
   families: [
     [L('Offensive'), 'off', [['Damage Boost', 1], ['Critical Damage Boost', 1], ['Critical Hit', 2], ['Attack Bonus', 3], ['Combat Speed', 3], ['Cooldown Reduction', 4], ['Multi-hit Chance', 4]]],
@@ -274,7 +274,7 @@ for (const [id, name] of [['nezekan', 'Nezekan'], ['zikel', 'Zikel'], ['vaizel',
     ['speed_value', L('What 1% Combat Speed is worth, as % damage')],
     ['cooldown_value', L('What 1% Cooldown Reduction is worth, as % damage')],
     ['multihit_value', L('What 1% Multi-hit Chance is worth, as % damage')]],
-  statsNote: L('Without the nodes of this board. Stats are valued in PvE, against the selected encounter; skill levels are not valued at all.'),
+  statsNote: L('Without the nodes of the four class boards. Stats are valued in PvE, against the selected encounter; skill levels are not valued at all.'),
   worthNote: L('One node of each kind on top of what you own, against the selected encounter, sorted by worth per crystal for your goal. Skill nodes show no worth: tick the ones you want under Skills.'),
   how(c) {
     const { b, sNow } = c, a = UI.ariel.how(c), v = (k, what) => (b[k] ? T('Counted as {x}% damage per 1%, the value you set', { x: fx(b[k], 2) }) : T('Not counted: set a value in My stats'));

@@ -390,6 +390,29 @@ Object.assign(FR, {
   '{s} Combat Speed, {c} Cooldown Reduction and {m} Multi-hit Chance from nodes, at the worth you set': '{s} de VIT de combat, {c} de réduction du temps de recharge et {m} de taux multi-coups des nœuds, à la valeur que vous avez fixée',
 });
 
+// the class boards as one page, the route from an empty board, skill icons
+Object.assign(FR, {
+  'Your crystals': 'Vos cristaux',
+  'All of them: those already in your board and those still free. The recommended route spends them from an empty board.': 'Tous : ceux déjà placés dans votre plateau et ceux encore libres. Le chemin recommandé les dépense à partir d’un plateau vide.',
+  'On the route and already yours': 'Sur le chemin et déjà à vous',
+  'A second plan from an empty board, with its own settings.': 'Un second plan à partir d’un plateau vide, avec ses propres réglages.',
+  'Board shown': 'Plateau affiché',
+  'The recommended route is planned from an empty board. To mark the nodes you have, switch to “What I own”.': 'Le chemin recommandé part d’un plateau vide. Pour marquer les nœuds que vous avez, passez à « Ce que je possède ».',
+  '{name} {used} of {of}': '{name} {used} sur {of}',
+  'You have {have}.': 'Vous avez {have}.',
+  '{nodes} owned for {crystals}, compared with an empty board: {list}.': '{nodes} possédés pour {crystals}, par rapport à un plateau vide : {list}.',
+  'The figures above compare the route with your board now. The route keeps {kept} of your {n} nodes and leaves out {moved}.': 'Les chiffres ci-dessus comparent le chemin à votre plateau actuel. Le chemin garde {kept} de vos {n} nœuds et en laisse {moved} de côté.',
+  'For your goal it is {x} better than your board.': 'Pour votre objectif, il est {x} meilleur que votre plateau.',
+  'For your goal it is no better than your board: keep what you have.': 'Pour votre objectif, il n’est pas meilleur que votre plateau : gardez ce que vous avez.',
+  'The recommended route, from an empty board with all your crystals. A green edge marks the nodes you already own.': 'Le chemin recommandé, à partir d’un plateau vide avec tous vos cristaux. Un bord vert marque les nœuds que vous possédez déjà.',
+  'Class boards': 'Plateaux de classe',
+  'Class boards route planner': 'Planificateur des plateaux de classe',
+  'Class boards route planner.': 'Planificateur des plateaux de classe.',
+  'Nezekan, Zikel, Vaizel and Triniel, paid from one pool of 416 points and planned together. Stats are scored in PvE; skill levels are not scored, tick the ones you want. Square icons are active skills, round ones passives.': 'Nezekan, Zikel, Vaizel et Triniel, payés sur une réserve commune de 416 points et planifiés ensemble. Les stats sont évaluées en JcE ; les niveaux de compétence ne sont pas chiffrés, cochez ceux que vous voulez. Icônes carrées : compétences actives ; rondes : passives.',
+  'Without the nodes of the four class boards. Stats are valued in PvE, against the selected encounter; skill levels are not valued at all.': 'Sans les nœuds des quatre plateaux de classe. Les stats sont évaluées en JcE, contre la rencontre choisie ; les niveaux de compétence ne sont pas évalués du tout.',
+  'Passive skill': 'Compétence passive', 'Active skill': 'Compétence active',
+});
+
 const LANG = (() => {
   if (typeof localStorage === 'undefined') return 'en';
   try { const s = localStorage.getItem('ariel-lang'); if (s === 'fr' || s === 'en') return s; } catch (e) {}
@@ -443,10 +466,10 @@ if (typeof module !== 'undefined' && require.main === module) {
   }
   // stat names, targets, comparison strategies, regions and messages from the other scripts, for both boards
   const P = require('./planner.js'), C = require('./character.js');
-  for (const id of ['ariel', 'azphel', ...P.CLASS_BOARDS]) {
+  for (const id of ['ariel', 'azphel', 'class']) {
     const B = P.make(id);
     for (const n of B.NODES) if (!n.isSkill) for (const e of n.fx) keys.add(e[0]);  // skill names: SKILLS_FR in boards.js
-    keys.add(B.BOARD.name + ' board route planner'); keys.add(B.BOARD.name + ' board route planner.');
+    if (id !== 'class') { keys.add(B.BOARD.name + ' board route planner'); keys.add(B.BOARD.name + ' board route planner.'); }
     for (const t of B.TARGETS) { keys.add(t.name); keys.add(t.note); }
     for (const b of B.baselines(1, B.DEFAULT_BUILD, 'dps', [], B.TARGETS[0])) keys.add(b.name);
   }

@@ -4,6 +4,7 @@
 (function (root) {
   const ALL = typeof BOARDS !== 'undefined' ? BOARDS : require('./boards.js');
   const SK = typeof SKILLS !== 'undefined' ? SKILLS : ALL.SKILLS;  // class -> board -> the skill behind each skill node
+  const META = typeof SKILL_META !== 'undefined' ? SKILL_META : ALL.SKILL_META;  // class -> skill -> icon file, '|p' for a passive
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const GOALS = { dps: [1, 0], tank: [0, 1], balanced: [0.5, 0.5] };
 
@@ -166,18 +167,24 @@
   const MODELS = { ariel: ARIEL, azphel: AZPHEL };
   const CLASS_BOARDS = ['nezekan', 'zikel', 'vaizel', 'triniel'], CLASSES = Object.keys(SK);
 
+  const POOL = 416;  // the four class boards are paid from one pool of Daevanion points
+
+  // id 'class' is the four class boards as one board with four starts and one pool: a route is planned across all of them at once
   function make(id, cls) {
-    const BOARD = ALL[id], M = MODELS[id] || GENERAL;
-    cls = CLASS_BOARDS.includes(id) ? (SK[cls] ? cls : CLASSES[0]) : '';
-    const names = cls ? SK[cls][id] : [], skills = [...new Set(names)];  // a skill can sit on two nodes
-    const NODES = BOARD.nodes.map(n => (n.skill == null ? n : Object.assign({}, n, { fx: [[names[n.skill], 1, false]], isSkill: true })))
-      .map(n => Object.assign({}, n, { stat: n.fx.length ? n.fx[0][0] : 'Start', kind: n.fx.map(e => e[0]).join(' + ') }));
+    const parts = id === 'class' ? CLASS_BOARDS : [id], M = MODELS[id] || GENERAL;
+    cls = id === 'class' || CLASS_BOARDS.includes(id) ? (SK[cls] ? cls : CLASSES[0]) : '';
+    // sub: which of the boards a node is on. A skill node gives one level of the skill behind it; the two-crystal ones are passives.
+    const NODES = parts.flatMap((part, sub) => ALL[part].nodes.map(n => Object.assign({}, n, n.skill == null ? null : { fx: [[SK[cls][part][n.skill], 1, false]], isSkill: true }, { sub, board: part })))
+      .map(n => Object.assign(n, { stat: n.fx.length ? n.fx[0][0] : 'Start', kind: n.fx.map(e => e[0]).join(' + ') }));
+    const BOARD = id === 'class' ? { name: 'Class', nodes: NODES, total_cost: NODES.reduce((a, n) => a + n.cost, 0), pool: POOL } : ALL[id];
+    const skills = [...new Set(NODES.filter(n => n.isSkill).map(n => n.stat))];  // a skill sits on several nodes
     const N = NODES.length;
-    const key = (x, y) => x + ',' + y;
-    const POS = new Map(NODES.map((n, i) => [key(n.x, n.y), i]));
-    const START = NODES.findIndex(n => !n.fx.length);
+    const key = (x, y, sub) => (x + 100 * (sub || 0)) + ',' + y;  // boards never touch: each is 100 columns away from the last
+    const POS = new Map(NODES.map((n, i) => [key(n.x, n.y, n.sub), i]));
+    const STARTS = NODES.map((n, i) => i).filter(i => !NODES[i].fx.length), START = STARTS[0];
+    const base = set => { const r = new Set(set || []); for (const i of STARTS) r.add(i); return r; };  // every start is yours from the beginning
     const ADJ = NODES.map(n => [[1, 0], [-1, 0], [0, 1], [0, -1]]
-      .map(([dx, dy]) => POS.get(key(n.x + dx, n.y + dy))).filter(i => i !== undefined));
+      .map(([dx, dy]) => POS.get(key(n.x + dx, n.y + dy, n.sub))).filter(i => i !== undefined));
     const { DEFAULT_BUILD, TARGETS, hit } = M;
     const score = (stats, b, t) => M.score(stats, b, t || TARGETS[0]);
 
@@ -204,9 +211,10 @@
     // ponytail: randomised search, not a proof of optimality. The self-test brute-forces small
     // budgets, and at these settings it matched an exact MILP in 240/240 runs up to 60 crystals
     // (at 240 rounds / restart every 40 it missed ~20%, by at most 2% of the gain).
-    function solve(crystals, weights, owned, allowed, rounds = 1500) {
+    // The four class boards together are 2.5 times the nodes and twice the budget, so they get fewer rounds for the same waiting time.
+    function solve(crystals, weights, owned, allowed, rounds = Math.round(clamp(53e6 / (N * (crystals + 1)), 300, 1500))) {
       const rand = rng32(1);
-      owned = new Set(owned).add(START);
+      owned = base(owned);
       const cost = NODES.map((n, i) => (owned.has(i) ? 0 : n.cost));
       const w = NODES.map((n, i) => (owned.has(i) ? 1e3 : weights[i] - 1e-9 * cost[i]));  // tie-break: cheaper
       const B = crystals, value = set => { let v = 0; for (const i of set) v += w[i]; return v; };
@@ -214,9 +222,9 @@
       for (let it = 0; it < rounds; it++) {
         if (it % 4 === 0) cur = owned;  // frequent fresh starts: 4 improving trees, then a new random one
         // random spanning tree that grows through `cur` first
-        const kids = NODES.map(() => []), seen = new Set([START]), hot = [], cold = [];
+        const kids = NODES.map(() => []), seen = new Set(STARTS), hot = [], cold = [];
         const push = u => { for (const v of ADJ[u]) if (!seen.has(v) && (!allowed || allowed.has(v))) (cur.has(u) && cur.has(v) ? hot : cold).push([u, v]); };
-        push(START);
+        for (const st of STARTS) push(st);
         while (hot.length || cold.length) {
           let e;
           if (hot.length) e = hot.pop();
@@ -224,7 +232,7 @@
           if (seen.has(e[1])) continue;
           seen.add(e[1]); kids[e[0]].push(e[1]); push(e[1]);
         }
-        const pre = [], end = new Array(N), stack = [[START, false]];
+        const pre = [], end = new Array(N), stack = STARTS.map(st => [st, false]);
         while (stack.length) {
           const [u, done] = stack.pop();
           if (done) { end[u] = pre.length; continue; }
@@ -266,7 +274,7 @@
 
     // Buy order: always adjacent to what you hold, best payoff per crystal first.
     function order(chosen, owned, weights) {
-      const have = new Set(owned || []).add(START), seq = [];
+      const have = base(owned), seq = [];
       while (have.size < chosen.size) {
         const path = new Map([...have].map(h => [h, []])), queue = [...have];
         for (const u of queue) for (const v of ADJ[u]) if (chosen.has(v) && !path.has(v)) { path.set(v, path.get(u).concat(v)); queue.push(v); }
@@ -286,7 +294,7 @@
     // The cheapest way, in crystals, to join `target` to a board that already holds START: the nodes to buy, target last.
     // Ties go to the path with fewer nodes. Used when a plan is built by hand and a far node is clicked.
     function pathTo(have, target) {
-      have = new Set(have).add(START);
+      have = base(have);
       if (have.has(target)) return [];
       const dist = NODES.map(() => [Infinity, Infinity]), prev = [], todo = new Set(NODES.keys());
       const less = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]);
@@ -302,7 +310,7 @@
       return path;
     }
 
-    const connected = set => order(new Set(set).add(START)).length === new Set(set).add(START).size - 1;
+    const connected = set => order(base(set)).length === base(set).size - STARTS.length;
     const spent = (set, owned) => [...set].reduce((a, i) => a + (owned && owned.has(i) ? 0 : NODES[i].cost), 0);
 
     // opt.must: skills (class boards) the route has to reach; they are worth more than any stat, so they go in first.
@@ -310,9 +318,10 @@
     // you have now are spent inside it, so nothing bought today ever has to be reset. `later` reports the price of that:
     // {chosen: the board at the larger total, seq: what to buy after today's nodes, loss: goal value given up today}.
     function plan(crystals, build, goal, owned, t, opt) {
-      const mix = GOALS[goal], must = new Set((opt && opt.must) || []), more = (opt && opt.later) || 0;
-      owned = new Set(owned || []).add(START);
-      const weigh = base => nodeWeights(build, mix, base, t).map((v, i) => v + (NODES[i].isSkill && must.has(NODES[i].stat) ? 10 : 0));
+      // points the goal has no use for are not wasted: they go to skill levels first, then to the other side of the goal
+      const mix = GOALS[goal].map(v => v || 1e-5), must = new Set((opt && opt.must) || []), more = (opt && opt.later) || 0;
+      owned = base(owned);
+            const weigh = from => nodeWeights(build, mix, from, t).map((v, i) => v + (!NODES[i].isSkill ? 0 : must.has(NODES[i].stat) ? 10 : 1e-4));
       const w = weigh(owned);
       const obj = c => { const s = score(totals(c), build, t); let v = mix[0] * Math.log(s[0]) + mix[1] * Math.log(s[1]); for (const i of c) if (NODES[i].isSkill && must.has(NODES[i].stat)) v += 10; return v; };
       const best = (budget, allowed) => {
@@ -329,7 +338,7 @@
 
     // Two ways a player might spend the same crystals without a planner, to compare against plan().
     function baselines(crystals, build, goal, owned, t) {
-      const mix = GOALS[goal], start = new Set(owned || []).add(START);
+      const mix = GOALS[goal], start = base(owned);
       const frontier = have => [...new Set([...have].flatMap(h => ADJ[h]))].filter(i => !have.has(i));
       // 1. always buy the neighbouring node that is worth most per crystal
       const greedy = new Set(start);
@@ -374,7 +383,7 @@
       return [...rows.values()].map(r => ({ ...r, costs: [...r.costs].sort() }));
     }
 
-    return { id, cls, skills, BOARD, NODES, START, POS, ADJ, DEFAULT_BUILD, GOALS, TARGETS, model: M, totals, hit, score, solve, plan, order, spent, pathTo, baselines, nodeTypes, connected };
+    return { id, cls, skills, skillMeta: (cls && META[cls]) || {}, BOARD, NODES, START, STARTS, base, POS, ADJ, DEFAULT_BUILD, GOALS, TARGETS, model: M, totals, hit, score, solve, plan, order, spent, pathTo, baselines, nodeTypes, connected };
   }
 
   function selftest() {
@@ -466,12 +475,20 @@
     close(N.score({ 'Damage Boost': 1 }, nb)[0], 1 + 0.01 / (1 + (nb.damage_boost_pct - nb.boss_tolerance_pct) / 100));
     const want = ['Healing Light', 'Bolt'], np = N.plan(30, nb, 'dps', [], N.TARGETS[0], { must: want });
     assert(N.spent(np.chosen) <= 30 && N.connected(np.chosen) && want.every(s => [...np.chosen].some(i => N.NODES[i].stat === s)), 'the route misses a wanted skill');
+    // ---- the four class boards as one: four starts, one pool
+    const K = make('class', 'cleric'), kall = K.NODES.map((_, i) => i);
+    assert(K.NODES.length === 384 && K.STARTS.length === 4 && K.BOARD.total_cost === 570 && K.BOARD.pool === 416 && K.connected(kall) && K.skills.length === 22);
+    for (const n of K.NODES) if (n.isSkill) assert(K.skillMeta[n.stat] && (n.cost === 2) === K.skillMeta[n.stat].endsWith('|p'), 'passives cost 2, actives 3: ' + n.stat);
+    assert(!K.connected([K.POS.get('103,2')]) && K.pathTo([], K.POS.get('307,6')).every(i => K.NODES[i].sub === 3), 'boards only join at their own start');
+    const kp = K.plan(416, K.DEFAULT_BUILD, 'balanced', [], K.TARGETS[0], { must: ['Bolt'] });
+    assert(K.spent(kp.chosen) <= 416 && K.connected(kp.chosen) && kp.seq.length === kp.chosen.size - 4 && new Set(kp.seq.map(i => K.NODES[i].sub)).size === 4);
+    assert(K.NODES.filter(n => n.stat === 'Bolt').every(n => kp.chosen.has(K.NODES.indexOf(n))), 'a wanted skill is taken on every board');
     console.log('selftest ok');
   }
 
   // the board comes from the address (?board=zikel&class=ranger); the class, for the class boards, falls back to the last one used
   const pick = () => {
-    const q = new URLSearchParams(location.search), id = BOARDS[q.get('board')] ? q.get('board') : 'ariel';
+    const q = new URLSearchParams(location.search), b = q.get('board'), id = CLASS_BOARDS.includes(b) ? 'class' : b === 'class' || BOARDS[b] ? b : 'ariel';  // the old address of one class board leads to all four
     let cls = q.get('class'); try { cls = cls || localStorage.getItem('daevanion-class'); } catch (e) {}
     return make(id, cls);
   };

@@ -8,7 +8,7 @@ Plans the best route through a Daevanion board for the crystals you have, shows 
 
 - **Ariel**, the PvE board: scored against bosses.
 - **Azphel**, the PvP board (`?board=azphel`): scored against another player. Only PvP stats count there.
-- **Nezekan, Zikel, Vaizel, Triniel**, the class boards (`?board=zikel&class=ranger`), for all eight classes: see "The class boards" below.
+- **Nezekan, Zikel, Vaizel, Triniel**, the four class boards, planned together from their shared pool of 416 points (`?board=class&class=ranger`), for all eight classes: see "The class boards" below.
 
 ```sh
 cd daevanion
@@ -139,11 +139,18 @@ Nezekan, Zikel and Vaizel have 88 nodes each, Triniel 116: general stats (Attack
 
 - **Stats** are scored in PvE with the Ariel formula and encounters. Combat Speed, Cooldown Reduction and Multi-hit Chance have no place in a one-hit formula, so each is worth what you say 1% of it is worth under My stats (defaults 1, 0.5 and 0.5% damage: guesses).
 - **Skills** are not scored: nothing published says what a skill level is worth, and it depends on how you play. You tick the skills you want and the route reaches them first, then spends the rest on stats. That is also how a healer, a support or a tank plans these boards: pick the skills of the role, and Damage, Survival or Both for the stats.
-- **Costs** are assumed from the node grade (1 to 4), the rule that gives exactly 232 on Ariel and Azphel. Not confirmed in game for these four boards.
+- **Costs** follow the node grade: 1 for a stat, 2 for a passive skill, 3 for an active skill, 4 for the corners. Confirmed in game, and a character with every point spent adds up to exactly 416.
+- **One pool.** The four boards hold 570 points and share a pool of 416, so they are planned as one board with four starts: the route decides how much of the pool each board gets. All four are treated as open, although the game opens them over time. One board is on screen at a time; each button says what that board takes.
+- **Skill icons** come from the skill list of the official character page and are loaded from the game's own asset server: square for an active skill, round for a passive.
+- **Leftover points** that your goal has no use for go to skill levels you did not tick, then to the other side of the goal.
 
 ### Planning for crystals to come
 
-"More crystals expected later" plans the route for the larger total and spends today's crystals inside it, so nothing bought now has to be reset later. The page says what that costs today against the best board for today's crystals alone, and the buy order continues, greyed, with what comes later. With owned nodes it also says what a full reset would gain and how many of your nodes it would move.
+"More crystals expected later" plans the route for the larger total and spends today's crystals inside it, so nothing bought now has to be reset later. The page says what that costs today against the best board for today's crystals alone, and the buy order continues, greyed, with what comes later.
+
+### The route starts from an empty board
+
+"Your crystals" is everything you have: what is already in your board plus what is free. Loading a character sets it to what the game says is in the board. The recommended route always spends that total from an empty board, so it is the board to aim for, not an extension of the one you have. Nodes on the route that you already own carry a green edge, and the Plan tab says how many of your nodes the route keeps, how many it leaves out, and whether it beats your board at all.
 
 ### Players you follow
 
@@ -151,6 +158,6 @@ The official API has a ranking endpoint, but on Global it returns nothing, so th
 
 ### How the route is found
 
-Each node gets a value from the formulas above (its gain on top of what you already own). Picking the best connected group of nodes under a crystal budget is a knapsack on a graph. On a tree that can be solved exactly, so the planner solves it on 1500 random spanning trees of the board and keeps the best answer. It then repeats once with node values taken halfway along the route, so diminishing returns and the crit cap are priced in.
+Each node gets a value from the formulas above (its gain on top of an empty board). Picking the best connected group of nodes under a crystal budget is a knapsack on a graph. On a tree that can be solved exactly, so the planner solves it on 1500 random spanning trees of the board and keeps the best answer (about 330 for the four class boards together, which are 2.5 times the nodes and twice the budget; there the answer came within 0.5% of a ten times longer search). It then repeats once with node values taken halfway along the route, so diminishing returns and the crit cap are priced in.
 
 This is a search, not a proof. The self-test checks it against brute force at 10 crystals, and it matched an exact (slow) integer-programming solve in 240 of 240 runs for budgets of 15 to 60 crystals. Above 60 it is unverified.
