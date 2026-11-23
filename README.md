@@ -4,10 +4,11 @@ Small tools for AION 2. One folder per tool.
 
 ## daevanion/ — Daevanion board route planner
 
-Plans the best route through a Daevanion board for the crystals you have, shows the numbers behind it, and compares boards. Two boards, switched with the buttons in the title band:
+Plans the best route through a Daevanion board for the crystals you have, shows the numbers behind it, and compares boards. Six boards, switched with the buttons in the title band:
 
 - **Ariel**, the PvE board: scored against bosses.
 - **Azphel**, the PvP board (`?board=azphel`): scored against another player. Only PvP stats count there.
+- **Nezekan, Zikel, Vaizel, Triniel**, the class boards (`?board=zikel&class=ranger`), for all eight classes: see "The class boards" below.
 
 ```sh
 cd daevanion
@@ -16,7 +17,7 @@ docker compose up -d    # then open http://localhost:8787  (stop with: docker co
 
 It restarts on its own after a reboot. Without Docker, `python3 serve.py` does the same thing. You can also just double-click `index.html`; everything works that way except loading a character.
 
-- `boards.js` — both boards, read from the official API; a node can give one stat or two (the green ones)
+- `boards.js` — the six boards and every class's skill nodes, read from the official API; a node can give one stat or two (the green ones), or a skill level
 - `planner.js` — the maths: one search, and a scoring model per board; `node planner.js` runs its self-test
 - `ui.js` — what differs between the boards on the page: labels, stat families, input fields, the worked calculation
 - `i18n.js` — English and French; `node i18n.js` checks that every text has a French entry
@@ -131,6 +132,22 @@ damage = ( [ ((Attack × Weapon Dmg Boost) + Attack Bonus) × Attack Increase + 
 - Evasion only pays once it passes the attacker's Accuracy: `(their Evasion − your Accuracy) × 0.06%`, capped at 30%. Block only matters for a player with a shield.
 - Status Effect Chance and Resist cannot be turned into damage. They count for nothing unless you give them a value under My stats.
 - The opponent is a set of player stats: a copy of yours, numbers you type, or a real player loaded from the game with their own Azphel board. Survival is your HP divided by their average hit on you, the same formula the other way round.
+
+### The class boards
+
+Nezekan, Zikel and Vaizel have 88 nodes each, Triniel 116: general stats (Attack Bonus, Critical Hit, Defense Bonus, HP, MP, Critical Hit Resist, and a few percent nodes that differ per board) and 22 skill nodes that each raise one skill by a level. The stat nodes are the same for every class; the skills behind the skill nodes are the class's own. Read from one level-45 character per class, 22 Nov 2026.
+
+- **Stats** are scored in PvE with the Ariel formula and encounters. Combat Speed, Cooldown Reduction and Multi-hit Chance have no place in a one-hit formula, so each is worth what you say 1% of it is worth under My stats (defaults 1, 0.5 and 0.5% damage: guesses).
+- **Skills** are not scored: nothing published says what a skill level is worth, and it depends on how you play. You tick the skills you want and the route reaches them first, then spends the rest on stats. That is also how a healer, a support or a tank plans these boards: pick the skills of the role, and Damage, Survival or Both for the stats.
+- **Costs** are assumed from the node grade (1 to 4), the rule that gives exactly 232 on Ariel and Azphel. Not confirmed in game for these four boards.
+
+### Planning for crystals to come
+
+"More crystals expected later" plans the route for the larger total and spends today's crystals inside it, so nothing bought now has to be reset later. The page says what that costs today against the best board for today's crystals alone, and the buy order continues, greyed, with what comes later. With owned nodes it also says what a full reset would gain and how many of your nodes it would move.
+
+### Players you follow
+
+The official API has a ranking endpoint, but on Global it returns nothing, so there is no top list to read. Under Compare you add up to ten players yourself; each board is valued with your stats and ranked for your goal, and a small board shows which nodes most of them own.
 
 ### How the route is found
 

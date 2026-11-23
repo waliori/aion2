@@ -13,6 +13,7 @@
   --fam-off-1: oklch(76% 0.13 12); --fam-off-2: oklch(83% 0.10 12); --fam-off-3: oklch(89% 0.07 12); --fam-off-4: oklch(94% 0.04 12);
   --fam-def-1: oklch(72% 0.12 250); --fam-def-2: oklch(80% 0.09 250); --fam-def-3: oklch(87% 0.06 250); --fam-def-4: oklch(93% 0.035 250);
   --fam-res-1: oklch(78% 0.10 195); --fam-res-2: oklch(89% 0.06 195);
+  --fam-skl-1: oklch(82% 0.10 305);
   --container: 1680px; --gutter: 32px; --control: 36px;
   --rail: 248px;
   /* the board takes what the rail and the panel leave, and never more than the window is tall */
@@ -32,11 +33,11 @@ body { color: var(--color-ink-2); font-size: var(--text-sm); }
 /* top bar */
 .topbar { border-bottom: var(--rule-hair) solid var(--color-ink); background: var(--color-paper-2); }
 .topbar .container { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-lg); min-height: 56px; padding-block: var(--space-xs); }
-.current { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); margin-left: auto; }
-.current[hidden], .lookup[hidden] { display: none; }
-.current p { color: var(--color-ink); font-weight: 500; }
+.topbar .current { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); margin-left: auto; }
+.topbar .current[hidden], .lookup[hidden] { display: none; }
+.topbar .current p { color: var(--color-ink); font-weight: 500; }
 .topbar .lang:last-child { margin-left: auto; }
-.current:not([hidden]) + .lang:last-child { margin-left: 0; }  /* the character sits between the boards and the language when one is in use */
+.topbar .current:not([hidden]) + .lang:last-child { margin-left: 0; }  /* the character sits between the boards and the language when one is in use */
 
 /* controls: moulded 6px keys */
 .btn { display: inline-flex; align-items: center; min-height: var(--control); padding: 0 var(--space-md); border: var(--rule-hair) solid color-mix(in oklab, var(--color-accent) 78%, var(--color-ink)); border-radius: var(--radius-pill);
@@ -95,7 +96,7 @@ input::placeholder { color: var(--color-muted); }
 #target { width: 100%; }
 
 .types { display: grid; gap: var(--space-3xs); margin-top: var(--space-xs); }
-@media (max-width: 84rem) and (min-width: 62rem) { .types { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3xs) var(--space-sm); align-items: start; } .family { grid-column: auto; } }
+@media (max-width: 84rem) and (min-width: 62rem) { .types { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3xs) var(--space-sm); align-items: start; } .family { grid-column: auto; } #skills-card:not([hidden]) + .sheetcard { grid-column: 1 / -1; } }
 .type { display: grid; grid-template-columns: 5.2ch minmax(0, 1fr) auto; align-items: center; gap: var(--space-xs); min-height: 28px; padding: 0 var(--space-xs) 0 0; border: var(--rule-hair) solid transparent; border-radius: var(--radius-pill); background: transparent; color: var(--color-ink-2);
   font: 400 var(--text-xs)/1.1 var(--font-body); text-align: left; cursor: pointer; transition: background-color var(--dur-micro) var(--ease-out); }
 .type .chip { padding: var(--space-2xs) 0; border-radius: var(--space-2xs); background: var(--fam); color: var(--color-ink); font-weight: 500; text-align: center; }
@@ -224,3 +225,21 @@ pre { margin: var(--space-sm) 0; padding: var(--space-sm); overflow-x: auto; bor
 #opp-box[hidden] { display: none; }
 
 .busy #board, .busy .pane { opacity: 0.6; }
+
+/* planned for later: on the route, not affordable yet */
+.node.later { border: var(--rule-hair) dashed color-mix(in oklab, var(--color-accent) 70%, var(--color-ink)); background: var(--color-accent-soft); color: var(--color-ink); }
+.swatch.later { border: var(--rule-hair) dashed color-mix(in oklab, var(--color-accent) 70%, var(--color-ink)); background: var(--color-accent-soft); }
+.mini i.heat { background: var(--color-accent); opacity: var(--h, 1); }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); gap: var(--space-2xs) var(--space-sm); }
+.checks div { display: flex; align-items: baseline; gap: var(--space-xs); }
+.checks input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+#class-pick { width: auto; }
+#group td:last-child { width: 1%; }
+#group .btn { min-height: 0; padding: var(--space-3xs) var(--space-xs); font-size: var(--text-xs); }
+
+/* phone: the board switch and the choice rows wrap instead of running off the screen, and the two compared boards stack */
+@media (max-width: 40rem) {
+  .seg, .lang { flex-wrap: wrap; }
+  .seg label + input + label, .lang button + button { border-left: var(--rule-hair) solid var(--color-rule); margin-left: calc(-1 * var(--rule-hair)); }
+  .sides { grid-template-columns: minmax(0, 1fr); }
+}

@@ -13,6 +13,7 @@
 <header class="topbar"><div class="container">
   <h1 id="page-heading">Ariel board route planner.</h1>
   <div class="lang" role="group" aria-label="Board" id="board-switch"></div>
+  <select id="class-pick" aria-label="Class" hidden></select>
   <div id="char-current" class="current" hidden>
     <p id="char-who"></p>
     <button class="btn btn--quiet" id="char-refresh" type="button">Refresh</button>
@@ -49,6 +50,11 @@
             <input id="slider" type="range" min="0" max="232" value="30" aria-label="Crystals to spend">
           </div>
         </div>
+        <div class="field">
+          <label for="later">More crystals expected later</label>
+          <input id="later" name="later" type="number" min="0" value="0" inputmode="numeric">
+          <p class="note">Optional. The route is then planned for the larger total, so what you buy now never has to be reset.</p>
+        </div>
         <fieldset class="field">
           <legend>Goal</legend>
           <div class="seg">
@@ -62,6 +68,12 @@
           <select id="target" name="target"></select>
           <p id="target-note" class="note"></p>
         </div>
+      </section>
+      <section class="sheetcard" id="skills-card" hidden>
+        <h2>Skills.</h2>
+        <p class="note">A skill level cannot be scored. Tick the skills you want: the route reaches them first and spends the rest on stats.</p>
+        <div id="skills" class="checks" role="group" aria-label="Skills"></div>
+        <p id="skills-note" class="note" aria-live="polite"></p>
       </section>
       <section class="sheetcard">
         <h2>Node types.</h2>
@@ -93,6 +105,7 @@
       </div>
       <ul class="key">
         <li><span class="swatch route"></span>Buy this</li>
+        <li><span class="swatch later"></span>Buy later</li>
         <li><span class="swatch mine"></span>My own plan</li>
         <li><span class="swatch owned"></span>Already owned</li>
         <li><span class="pips"><i></i><i></i><i></i></span>One tick per crystal of cost</li>
@@ -117,6 +130,7 @@
             <div><dd id="r-spent">0</dd><dt>Crystals spent</dt></div>
           </dl>
           <p id="gains"></p>
+          <p id="later-note" class="note" hidden></p>
         </section>
         <section>
           <h2>Your board now.</h2>
@@ -127,6 +141,7 @@
           </dl>
           <div class="stack">
             <p id="owned-note"></p>
+            <p id="reset-note" class="note" hidden></p>
             <button class="btn btn--quiet" id="clear-owned" type="button">Clear owned nodes</button>
           </div>
         </section>
@@ -222,6 +237,27 @@
           <p id="p-status" class="note" aria-live="polite"></p>
         </section>
         <section>
+          <h2>Players you follow.</h2>
+          <p class="note">The game publishes no ranking to read, so the list is yours: add up to ten players whose boards you want to learn from. Each board is valued with your stats.</p>
+          <form id="g-form" class="lookup">
+            <select id="g-region" name="region" aria-label="Region"></select>
+            <select id="g-faction" name="faction" aria-label="Faction"></select>
+            <select id="g-server" name="server" aria-label="Server"></select>
+            <input id="g-name" name="character" type="search" placeholder="Character name" aria-label="Character name" required minlength="2" autocomplete="off">
+            <button class="btn btn--quiet" type="submit">Find</button>
+          </form>
+          <ul id="g-hits" class="hits"></ul>
+          <p id="g-status" class="note" aria-live="polite"></p>
+          <div class="scroll"><table>
+            <thead><tr><th>Board</th><th class="num">Nodes</th><th class="num">Crystals</th><th class="num">Damage</th><th class="num">Eff. HP</th><th>For your goal</th><th></th></tr></thead>
+            <tbody id="group"></tbody>
+          </table></div>
+          <div class="sides" id="g-heat" hidden>
+            <div class="mini" id="mini-g" role="img" aria-label="Nodes these players own"></div>
+            <p class="note" id="g-note"></p>
+          </div>
+        </section>
+        <section>
           <h2>The difference.</h2>
           <p class="note" id="cmp-note"></p>
           <div class="scroll"><table>
@@ -282,13 +318,22 @@
 <script>
 const P = Planner, C = Character, $ = id => document.getElementById(id);
 const B = UI[P.id];  // everything board-specific: labels, families, fields, explanations (ui.js)
-const SHORT = LANG === 'fr' ? B.shortFr : B.short;
+const MAX = P.BOARD.total_cost;  // crystals in the whole board
+const STORE = B.store + (P.cls ? '-' + P.cls : '');  // a class board keeps its own settings per class
+const CLASS_NAMES = { gladiator: 'Gladiator', templar: 'Templar', assassin: 'Assassin', ranger: 'Ranger', sorcerer: 'Sorcerer', spiritmaster: 'Spiritmaster', cleric: 'Cleric', chanter: 'Chanter' };
+const SHORT = Object.assign({}, LANG === 'fr' ? B.shortFr : B.short);
+// a skill node is labelled with the skill's initials
+for (const s of P.skills) { const w = T(s).split(/[\s'’-]+/).filter(x => x.length > 2 || /^[A-ZÀ-Ý]/.test(x)); SHORT[s] = w.length > 1 ? w.map(x => x[0].toUpperCase()).join('').slice(0, 4) : T(s).slice(0, 4); }
+// the families of stats, keeping only what this board really has (the four class boards do not all carry the same stats)
+const FAMILIES = [...B.families, [L('Skills'), 'skl', P.skills.map(s => [s, 1])]]
+  .map(([name, key, stats]) => [name, key, stats.filter(([st]) => P.NODES.some(n => n.fx.some(e => e[0] === st)))]).filter(f => f[2].length);
 const SIDES = { mine: 'My board now', plan: 'This plan', own: 'My own plan', other: 'Another plan', player: 'Another player' };
 const GOAL_NAMES = { dps: 'Damage', tank: 'Survival', balanced: 'Both' };
 const effect = ([stat, value, pct]) => `${T(stat)} +${dec(value)}${pct ? '%' : ''}`;
 const describe = n => n.fx.map(effect).join(', ');  // a green node gives two stats
 const tileLabel = n => n.fx.map(e => SHORT[e[0]]).join('\n');
-const isPct = k => /Damage|Status/.test(k);
+const PCT = new Set(P.NODES.flatMap(n => n.fx.filter(e => e[2]).map(e => e[0])));
+const isPct = k => PCT.has(k);
 const gainsText = t => Object.keys(t).sort().map(k => `${T(k)} +${plain(t[k])}${isPct(k) ? '%' : ''}`).join(', ');
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const bar = (v, lead) => { const b = el('span', 'bar' + (v > 0.002 ? '' : ' zero') + (lead ? ' lead' : '')); b.style.setProperty('--v', Math.max(0, Math.min(1, v)).toFixed(3)); return b; };
@@ -307,18 +352,25 @@ const rows = (id, list) => $(id).replaceChildren(...list.map(({ cells, cls, hove
 // language: the static text of the page is translated in place, then the switch in the band
 translatePage(document);
 document.title = T(B.title);
+for (const id of ['crystals', 'slider', 'o-crystals', 'later']) $(id).max = MAX;
 for (const [id, text] of [['page-heading', B.heading], ['tagline', B.tagline], ['states-head', B.statesHead], ['worth-note', B.worthNote], ['enc-title', B.encTitle], ['enc-note', B.encNote],
   ['enc-head', B.encHead], ['miss-head', B.missHead], ['compare-note', B.compareNote], ['stats-note', B.statsNote], ['custom-title', B.customTitle], ['custom-note', B.customNote],
   ['formula', B.formula], ['calc-foot', B.calcNote]]) $(id).textContent = T(text);
 $('bullets').replaceChildren(...B.bullets.map(t => el('li', '', T(t))));
 $('board').setAttribute('aria-label', T(B.title));
-// the two boards are two addresses of the same page: ?board=azphel is the PvP one
+// the boards are addresses of the same page: ?board=azphel is the PvP one, ?board=zikel&class=ranger a class board
+let lastClass = P.cls; try { lastClass = lastClass || localStorage.getItem('daevanion-class') || ''; } catch (e) {}
+const go = (board, cls) => { const q = new URLSearchParams(); if (board !== 'ariel') q.set('board', board); if (cls && UI[board].classBoard) q.set('class', cls); location.search = q.toString(); };
 $('board-switch').replaceChildren(...Object.entries(UI).map(([id, u]) => {
   const b = el('button', '', T(u.label));
   b.type = 'button'; b.setAttribute('aria-pressed', id === P.id);
-  b.addEventListener('click', () => { if (id !== P.id) location.search = id === 'ariel' ? '' : '?board=' + id; });
+  b.addEventListener('click', () => { if (id !== P.id) go(id, lastClass); });
   return b;
 }));
+$('class-pick').hidden = !B.classBoard;
+$('class-pick').replaceChildren(...P.CLASSES.map(c => new Option(T(CLASS_NAMES[c] || c), c)));
+$('class-pick').value = P.cls;
+$('class-pick').addEventListener('change', e => { try { localStorage.setItem('daevanion-class', e.target.value); } catch (err) {} go(P.id, e.target.value); });
 document.querySelectorAll('tbody').forEach(tb => { tb.dataset.empty = T('Nothing to show yet.'); });
 document.querySelectorAll('[data-lang]').forEach(b => {
   b.setAttribute('aria-pressed', b.dataset.lang === LANG);
@@ -327,9 +379,12 @@ document.querySelectorAll('[data-lang]').forEach(b => {
 
 // saved between visits; the page works without it
 let saved = {};
-try { saved = JSON.parse(localStorage.getItem(B.store) || '{}'); } catch (e) {}
+try { saved = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) {}
 const state = {
   crystals: Number.isInteger(saved.crystals) ? saved.crystals : 30,
+  later: Number.isInteger(saved.later) ? saved.later : 0,  // crystals still to come: the route is planned for crystals + later
+  must: (saved.must || []).filter(s => P.skills.includes(s)),  // class boards: the skills the route has to reach
+  group: (saved.group || []).filter(g => g && g.name && Array.isArray(g.nodes)),  // players whose boards you follow: [{name, nodes}]
   goal: P.GOALS[saved.goal] ? saved.goal : 'dps',
   target: saved.target || P.TARGETS[0].id,
   custom: saved.custom || {},  // the custom target: a boss (Ariel) or an opponent (Azphel); filled from the build below
@@ -346,7 +401,7 @@ const state = {
 if (!P.connected(state.owned)) state.owned.clear();
 let lastPlan = new Set();  // the recommended plan as last computed, for copying into the hand-made one
 { const d = B.customDefaults(state.build); for (const [k] of B.customFields) if (!(state.custom[k] >= 0)) state.custom[k] = d[k]; }
-const save = () => { try { localStorage.setItem(B.store, JSON.stringify({ ...state, owned: [...state.owned], manual: [...state.manual] })); } catch (e) {} };
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify({ ...state, owned: [...state.owned], manual: [...state.manual] })); } catch (e) {} };
 const targets = () => [...P.TARGETS, B.customTarget(state.custom, state.customName)];
 const targetById = id => targets().find(t => t.id === id) || P.TARGETS[0];
 
@@ -377,7 +432,7 @@ const tiles = P.NODES.map((n, i) => {
 // node types beside the board, in three families with a shade per kind of stat (ui.js sets the order).
 // Click a type (or a family) to colour its nodes; hovering previews it. A green node counts for both of its stats.
 const FAM = {};  // stat -> 'off-2': the family and its shade
-for (const [, key, stats] of B.families) for (const [stat, shade] of stats) FAM[stat] = key + '-' + shade;
+for (const [, key, stats] of FAMILIES) for (const [stat, shade] of stats) FAM[stat] = key + '-' + shade;
 const famVars = (e, stats) => { e.style.setProperty('--fam', `var(--fam-${FAM[stats[0]]})`); e.style.setProperty('--fam2', `var(--fam-${FAM[stats[stats.length - 1]]})`); };
 tiles.forEach((tile, i) => { const n = P.NODES[i]; if (n.fx.length) { famVars(tile, n.fx.map(e => e[0])); tile.classList.toggle('two', n.fx.length > 1); } });
 const gives = (n, stat) => n.fx.some(e => e[0] === stat);
@@ -393,7 +448,7 @@ const peeker = (b, stats, text) => {
   const peek = () => { hoverTypes = stats; paintTypes(); hint(text); }, leave = () => { hoverTypes = []; paintTypes(); };
   b.addEventListener('mouseenter', peek); b.addEventListener('focus', peek); b.addEventListener('mouseleave', leave); b.addEventListener('blur', leave);
 };
-$('types').replaceChildren(...B.families.flatMap(([name, key, stats]) => {
+$('types').replaceChildren(...FAMILIES.flatMap(([name, key, stats]) => {
   const names = stats.map(x => x[0]), count = P.NODES.filter(n => names.some(s => gives(n, s))).length;
   const head = el('button', 'family', T(name)), famText = T('{name}: {nodes}', { name: T(name), nodes: nodesText(count) });
   head.type = 'button'; head.dataset.stats = names.join('|'); head.style.setProperty('--fam', `var(--fam-${key}-2)`); head.title = famText; head.setAttribute('aria-label', famText);
@@ -440,7 +495,8 @@ function update() {
 let otherCache = { key: '', set: null };
 function render() {
   const b = state.build, t = targetById(state.target), mix = P.GOALS[state.goal], tName = T(t.name);
-  const plan = P.plan(state.crystals, b, state.goal, state.owned, t); lastPlan = plan.chosen;
+  const plan = P.plan(state.crystals, b, state.goal, state.owned, t, { must: state.must, later: state.later }); lastPlan = plan.chosen;
+  const laterSeq = plan.later ? plan.later.seq : [];
   const sNow = P.totals(state.owned), sAfter = P.totals(plan.chosen);
   const sc = s => P.score(s, b, t), vs = (a, base) => a / base - 1;
   const [d0, e0] = sc(sNow), [d1, e1] = sc(sAfter);
@@ -448,19 +504,19 @@ function render() {
   const goalValue = set => { const s = P.score(P.totals(set), b, t); return mix[0] * Math.log(s[0]) + mix[1] * Math.log(s[1]); };
 
   // board
-  const step = new Map(plan.seq.map((i, k) => [i, k + 1]));
+  const step = new Map([...plan.seq, ...laterSeq].map((i, k) => [i, k + 1])), wait = new Set(laterSeq);
   tiles.forEach((tile, i) => {
     if (i === P.START) return;
     const n = P.NODES[i], owned = state.owned.has(i), s = step.get(i);
     // while planning by hand the board shows only that plan: owned nodes and the recommendation are hidden
     const planning = state.mode === 'plan', showRoute = state.mode === 'rec', mine = planning && state.manual.has(i);
-    tile.className = 'node' + (n.fx.length > 1 ? ' two' : '') + (planning ? (mine ? ' mine' : '') : owned ? ' owned' : s && showRoute ? ' route' : '');
+    tile.className = 'node' + (n.fx.length > 1 ? ' two' : '') + (planning ? (mine ? ' mine' : '') : owned ? ' owned' : s && showRoute ? (wait.has(i) ? ' later' : ' route') : '');
     tile.textContent = tileLabel(n);
     if (s && showRoute && !owned) tile.appendChild(el('span', 'step', s));
     const pips = el('span', 'pips');  // cost: one tick per crystal
     for (let k = 0; k < n.cost; k++) pips.appendChild(el('i'));
     tile.appendChild(pips);
-    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (planning ? (mine ? T(', in my plan') : '') : owned ? T(', owned') : s && showRoute ? T(', buy as step {s}', { s }) : ''));
+    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (planning ? (mine ? T(', in my plan') : '') : owned ? T(', owned') : s && showRoute ? T(wait.has(i) ? ', buy later as step {s}' : ', buy as step {s}', { s }) : ''));
     tile.setAttribute('aria-pressed', planning ? mine : owned);
   });
   paintTypes();  // render() rebuilt the tiles' classes
@@ -480,6 +536,15 @@ function render() {
   $('r-dmg').textContent = signed(vs(d1, d0)); $('r-ehp').textContent = signed(vs(e1, e0)); $('r-spent').textContent = T('{a} of {b}', { a: spent, b: state.crystals });
   $('gains').textContent = plan.seq.length ? T('You gain: {list}.', { list: gainsText(P.totals(plan.seq)) })
     : T(state.crystals ? 'Nothing left on the board is worth buying for this goal.' : 'Enter how many crystals you have.');
+  const total = cr(state.crystals + state.later), share = v => fx((1 - Math.exp(-v)) * 100, 2) + '%';
+  $('later-note').hidden = !plan.later;
+  if (plan.later) $('later-note').textContent = T('Planned toward {total}: everything you buy now is on the best board for {total}, so nothing has to be reset on the way. The greyed steps of the buy order come later.', { total })
+    + ' ' + (plan.later.loss > 1e-6 && plan.later.loss < 5 ? T('Today that gives up {x} of what the best board for {now} alone would bring.', { x: share(plan.later.loss), now: cr(state.crystals) }) : T('Today it is as good as the best board for {now} alone.', { now: cr(state.crystals) }));
+  if (P.skills.length) {
+    const wanted = P.NODES.map((n, i) => i).filter(i => P.NODES[i].isSkill && state.must.includes(P.NODES[i].stat)), got = wanted.filter(i => plan.chosen.has(i)).length;
+    $('skills-note').textContent = !wanted.length ? '' : got === wanted.length ? T('All {n} wanted skill nodes are on the route.', { n: wanted.length }) : T('{a} of {n} wanted skill nodes fit in these crystals.', { a: got, n: wanted.length });
+    $('skills-note').classList.toggle('warn', got < wanted.length);
+  }
   $('n-dmg').textContent = signed(d0 - 1); $('n-ehp').textContent = signed(e0 - 1); $('n-spent').textContent = ownedCost;
   $('now-figures').hidden = !state.owned.size;
   $('clear-owned').disabled = !state.owned.size;  // always visible; nothing to clear when you own no nodes
@@ -488,10 +553,10 @@ function render() {
     : T('No owned nodes yet. Load your character, or click the nodes you have bought.');
   $('clear-owned').textContent = state.owned.size ? T('Clear owned nodes and get {crystals} back', { crystals: cr(ownedCost) }) : T('Clear owned nodes');
   let run = 0; const sofar = new Set(state.owned);
-  rows('order', plan.seq.map((i, k) => {
+  rows('order', [...plan.seq, ...laterSeq].map((i, k) => {
     const n = P.NODES[i]; run += n.cost; sofar.add(i);
     const s = sc(P.totals(sofar));
-    return { cls: n.cost >= 3 ? 'major' : '', hover: () => tiles[i].focus({ preventScroll: true }),
+    return { cls: k >= plan.seq.length ? 'faint' : n.cost >= 3 ? 'major' : '', hover: () => tiles[i].focus({ preventScroll: true }),
       cells: [k + 1, describe(n), [`${n.x + 1}, ${n.y + 1}`, 'num'], n.cost, run, [signed(vs(s[0], d0)), 'num'], [signed(vs(s[1], e0)), 'num']] };
   }));
 
@@ -518,9 +583,14 @@ function render() {
   // other ways to spend the same crystals, all measured against an empty board
   const ways = [{ name: T('This plan'), chosen: plan.chosen, cost: spent }, ...P.baselines(state.crystals, b, state.goal, state.owned, t).map(x => ({ ...x, name: T(x.name), cost: P.spent(x.chosen, state.owned) }))];
   if (state.owned.size) {
-    const all = Math.min(232, state.crystals + ownedCost), fresh = P.plan(all, b, state.goal, [], t);
+    const all = Math.min(MAX, state.crystals + ownedCost), fresh = P.plan(all, b, state.goal, [], t, { must: state.must });
     ways.push({ name: T('Clear the board and re-plan all {crystals}', { crystals: cr(all) }), chosen: fresh.chosen, cost: P.spent(fresh.seq) });
+    // keep or reset: what starting over would bring, and how many of your nodes it would move
+    const gain = goalValue(fresh.chosen) - goalValue(plan.chosen), moved = [...state.owned].filter(i => !fresh.chosen.has(i)).length;
+    $('reset-note').textContent = gain > 1e-6 ? T('Keep or reset: starting over with all {crystals} would be {x} better for your goal, and would move {n} of your nodes.', { crystals: cr(all), x: fx((Math.exp(gain) - 1) * 100, 2) + '%', n: moved })
+      : T('Keep or reset: starting over would gain nothing. What you own already sits on the best board.');
   }
+  $('reset-note').hidden = !state.owned.size;
   const top = Math.max(...ways.map(w => goalValue(w.chosen)), 1e-12);
   rows('alts', ways.map((w, k) => {
     const s = P.score(P.totals(w.chosen), b, t);
@@ -547,9 +617,9 @@ function render() {
   const sets = { mine: new Set(state.owned).add(P.START), plan: plan.chosen, own: ownSet,
     player: new Set(state.cmp.player.nodes.filter(i => P.NODES[i])).add(P.START) };
   if (need('other')) {
-    const key = JSON.stringify([o, b, [...state.owned], state.custom]);
+    const key = JSON.stringify([o, b, [...state.owned], state.custom, state.must]);
     if (!targets().some(x => x.id === o.target)) o.target = P.TARGETS[0].id;
-    if (otherCache.key !== key) otherCache = { key, set: P.plan(o.crystals, b, o.goal, state.owned, targetById(o.target)).chosen };
+    if (otherCache.key !== key) otherCache = { key, set: P.plan(o.crystals, b, o.goal, state.owned, targetById(o.target), { must: state.must }).chosen };
     sets.other = otherCache.set;
   }
   const SA = sets[state.cmp.a] || sets.mine, SB = sets[state.cmp.b] || sets.plan;  // the two boards being compared
@@ -566,6 +636,27 @@ function render() {
   $('cmp-ha').textContent = nameA; $('cmp-hb').textContent = nameB; $('cmp-hd').textContent = T('Difference');
   $('key-a').textContent = T('Only on: {name}', { name: nameA }); $('key-b').textContent = T('Only on: {name}', { name: nameB });
   $('cmp-note').textContent = T('The difference is “{b}” compared with “{a}”: a plus means “{b}” has more. Green is where “{a}” is ahead, red is where “{b}” is.', { a: nameA, b: nameB });
+  // the players you follow: each board with your stats, best for your goal first, and how many of them own each node
+  const crew = [{ name: T('This plan'), set: plan.chosen, me: true }, ...state.group.map(g => ({ name: g.name, set: new Set(g.nodes.filter(i => P.NODES[i])).add(P.START) }))]
+    .map(g => ({ ...g, s: sc(P.totals(g.set)), v: goalValue(g.set) })).sort((x, y) => y.v - x.v);
+  const topCrew = Math.max(...crew.map(g => g.v), 1e-12);
+  rows('group', state.group.length ? crew.map(g => {
+    const out = el('button', 'btn btn--quiet', T('Remove'));
+    out.type = 'button'; out.setAttribute('aria-label', T('Remove {name}', { name: g.name }));
+    out.addEventListener('click', () => { state.group = state.group.filter(x => x.name !== g.name); update(); });
+    return { cls: g.me ? 'current' : '', cells: [g.name, g.set.size - 1, P.spent(g.set), [signed(g.s[0] - 1), 'num'], [signed(g.s[1] - 1), 'num'], [bar(g.v / topCrew), 'track'], [g.me ? '' : out, '']] };
+  }) : []);
+  $('g-heat').hidden = !state.group.length;
+  if (state.group.length) {
+    const count = P.NODES.map((_, i) => state.group.filter(g => g.nodes.includes(i)).length), half = state.group.length / 2;
+    $('mini-g').replaceChildren(...P.NODES.map((n, i) => {
+      const c = el('i', i === P.START ? 'start' : count[i] ? 'heat' : '');
+      c.style.gridColumn = n.x + 1; c.style.gridRow = n.y + 1; c.style.setProperty('--h', (0.2 + 0.8 * count[i] / state.group.length).toFixed(2));
+      return c;
+    }));
+    const common = count.map((c, i) => i).filter(i => i !== P.START && count[i] >= half);
+    $('g-note').textContent = T('The darker a node, the more of these players own it. {common} nodes are owned by at least half of them; this plan takes {shared} of those.', { common: common.length, shared: common.filter(i => plan.chosen.has(i)).length });
+  }
   const tA = P.totals(SA), tB = P.totals(SB), sA = sc(tA), sB = sc(tB), hA = H(tA), hB = H(tB);
   // difference cell, coloured from the left board's side: green where the left board is ahead, red where the right one is.
   // sense: 1 = more is better, -1 = less is better, 0 = neither (no colour)
@@ -584,12 +675,22 @@ function render() {
 }
 
 function setCrystals(v) {
-  v = Math.max(0, Math.min(232, Math.round(+v) || 0));
+  v = Math.max(0, Math.min(MAX, Math.round(+v) || 0));
   state.crystals = v; $('crystals').value = v; $('slider').value = v; update();
 }
 $('crystals').addEventListener('change', e => setCrystals(e.target.value));
 $('slider').addEventListener('input', e => { $('crystals').value = e.target.value; });
 $('slider').addEventListener('change', e => setCrystals(e.target.value));
+$('later').value = state.later;
+$('later').addEventListener('change', e => { state.later = Math.max(0, Math.min(MAX, Math.round(+e.target.value) || 0)); e.target.value = state.later; update(); });
+// class boards: the skills to reach. A skill can sit on two nodes; ticking it asks for both.
+$('skills-card').hidden = !P.skills.length;
+$('skills').replaceChildren(...P.skills.map((sk, k) => {
+  const nodes = P.NODES.filter(n => n.isSkill && n.stat === sk), box = el('input'), l = el('label', '', T(sk) + (nodes.length > 1 ? ' ×' + nodes.length : ''));
+  box.type = 'checkbox'; box.id = 'skill-' + k; box.checked = state.must.includes(sk); l.htmlFor = box.id;
+  box.addEventListener('change', () => { state.must = P.skills.filter(x => (x === sk ? box.checked : state.must.includes(x))); update(); });
+  const row = el('div'); row.append(box, l); return row;
+}));
 document.querySelectorAll('input[name=goal]').forEach(r => {
   r.checked = r.value === state.goal;
   r.addEventListener('change', () => { state.goal = r.value; update(); });
@@ -639,7 +740,7 @@ for (const side of ['a', 'b']) {
   $('cmp-' + side).addEventListener('change', e => { state.cmp[side] = e.target.value; update(); });
 }
 $('o-target').replaceChildren(...targetOptions());
-[['o-crystals', 'crystals', v => Math.max(0, Math.min(232, Math.round(+v) || 0))], ['o-goal', 'goal', v => v], ['o-target', 'target', v => v]].forEach(([id, k, clean]) => {
+[['o-crystals', 'crystals', v => Math.max(0, Math.min(MAX, Math.round(+v) || 0))], ['o-goal', 'goal', v => v], ['o-target', 'target', v => v]].forEach(([id, k, clean]) => {
   $(id).value = state.cmp.other[k];
   $(id).addEventListener('change', e => { state.cmp.other[k] = clean(e.target.value); e.target.value = state.cmp.other[k]; update(); });
 });
@@ -718,10 +819,13 @@ async function fetchCharacter(hit, say) {
   const d = await C.load(hit, msg => say(said(msg))), boards = {};
   for (const kind of Object.keys(UI)) boards[kind] = C.toBuild(d.info, d.items, d.boards, kind);
   if (!(boards[P.id].build.attack > 0)) throw new Error('This character has no weapon equipped, so there is nothing to calculate from.');
-  character = { hit: { name: hit.name, serverName: hit.serverName, serverId: hit.serverId, characterId: hit.characterId, region: hit.region, race: hit.race, level: hit.level }, stamp: Date.now(), boards };
+  const cls = C.classOf(d.info);
+  try { if (cls) localStorage.setItem('daevanion-class', cls); } catch (e) {}
+  character = { cls, hit: { name: hit.name, serverName: hit.serverName, serverId: hit.serverId, characterId: hit.characterId, region: hit.region, race: hit.race, level: hit.level }, stamp: Date.now(), boards };
   try { localStorage.setItem(CHAR_KEY, JSON.stringify(character)); } catch (e) {}
   applyCharacter(); buildFields(); showCharacter(); update();
-  say(B.loaded(hit.name, boards[P.id].build, nodesText(state.owned.size)) + ' ' + T('The other board will use this character too, without loading again.'));
+  say(B.loaded(hit.name, boards[P.id].build, nodesText(state.owned.size)) + ' ' + T('The other boards will use this character too, without loading again.'));
+  if (B.classBoard && P.CLASSES.includes(cls) && cls !== P.cls) go(P.id, cls);  // a class board follows the class of the character you load
 }
 const charSay = lookup('char-form', 'char-region', 'char-faction', 'char-server', 'char-name', 'char-hits', 'char-status', fetchCharacter);
 $('char-refresh').addEventListener('click', async () => {
@@ -758,6 +862,15 @@ const playerSay = lookup('p-form', 'p-region', 'p-faction', 'p-server', 'p-name'
   say(openNodes(set.size));
 });
 if (!offline && state.cmp.player.name) playerSay(openNodes(state.cmp.player.nodes.length));
+lookup('g-form', 'g-region', 'g-faction', 'g-server', 'g-name', 'g-hits', 'g-status', async (hit, say) => {
+  const name = `${hit.name}, ${hit.serverName}`;
+  if (state.group.length >= 10 && !state.group.some(g => g.name === name)) return say(T('The list is full. Remove a player first.'), true);
+  say(T('Reading their board…'));
+  const nodes = [...toSet(await C.loadBoard(hit, P.id))];
+  state.group = [...state.group.filter(g => g.name !== name), { name, nodes }];
+  update();
+  say(T('{name} added: {n} nodes open on this board.', { name, n: nodes.length }));
+});
 
 buildFields();
 customFields();

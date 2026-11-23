@@ -7,12 +7,12 @@
   const SEARCH = 'https://api-search.plaync.com/aion2global/search/v2/character';
   const REGIONS = { eu: 'Europe', nae: 'North America East', naw: 'North America West', la: 'South America', as: 'Asia' };
   // Board ids are different for every class (Gladiator 11 to 16, Chanter 81 to 86, ...), so they are read
-  // from the character, never hard-coded. Ariel (PvE) is the fifth board, Azphel (PvP) the sixth.
-  const KIND = { 5: 'ariel', 6: 'azphel' };
+  // from the character, never hard-coded. The first four are the class boards, Ariel (PvE) is the fifth, Azphel (PvP) the sixth.
+  const KIND = { 1: 'nezekan', 2: 'zikel', 3: 'vaizel', 4: 'triniel', 5: 'ariel', 6: 'azphel' };
   const boardList = info => ((info.daevanion && info.daevanion.boardList) || []).map(b => ({ id: b.id, kind: KIND[b.id % 10] || '' }));
   const openNodes = (info, boards, kind) => {
     const a = boardList(info).find(b => b.kind === kind);
-    return ((a && boards[a.id] && boards[a.id].nodeList) || []).filter(n => n.open && n.type === 'Stat').map(n => [n.col - 1, n.row - 1]);
+    return ((a && boards[a.id] && boards[a.id].nodeList) || []).filter(n => n.open && (n.type === 'Stat' || n.type === 'SkillLevel')).map(n => [n.col - 1, n.row - 1]);
   };
   const num = v => parseFloat(String(v).replace(/[+,]/g, ''));
 
@@ -77,7 +77,7 @@
     // the pieces of the Attack figure, so the page can show its working
     const parts = { attack: build.attack, weapon: Math.round(weapon), lines: f('Attack'), weaponBoost: p('Weapon Damage Boost'), bonus: f('Attack Bonus'),
       increase: p('Attack increase'), flat: extra };
-    return { build, parts, owned: openNodes(info, boards, kind) };
+    return { build, parts, owned: openNodes(info, boards, kind) };  // for a class board the build is the PvE one
   }
 
   async function get(url) {
@@ -121,6 +121,9 @@
     return openNodes(info, { [a.id]: await get(`${API}/daevanion/detail?${q}&boardId=${a.id}`) }, a.kind);
   }
 
-  const api = { REGIONS, servers, search, load, loadBoard, toBuild, collect };
+  // 'cleric', 'spiritmaster', ...: the class as the planner names it
+  const classOf = info => String((info.profile && info.profile.className) || '').toLowerCase().replace(/[^a-z]/g, '');
+
+  const api = { REGIONS, servers, search, load, loadBoard, toBuild, collect, classOf };
   if (typeof module !== 'undefined') module.exports = api; else root.Character = api;
 })(this);

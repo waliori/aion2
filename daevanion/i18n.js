@@ -346,6 +346,50 @@ Object.assign(FR, {
        × critique (1,25×) × double (1,5×) × face/dos`,
 });
 
+// --- class boards, planning toward a later total, players you follow ---
+Object.assign(FR, {
+  'Attack Bonus': 'ATQ supplémentaire', 'Defense Bonus': 'DÉF supplémentaire', 'Damage Boost': 'Boost de DGT', 'Damage Tolerance': 'Tolérance aux DGT',
+  'Critical Damage Boost': 'Boost de DGT CRIT', 'Critical Damage Tolerance': 'Tolérance aux DGT CRIT', 'Combat Speed': 'VIT de combat',
+  'Cooldown Reduction': 'Réduction du temps de recharge', 'Multi-hit Chance': 'Taux multi-coups', 'Multi-hit Resist': 'RÉS multi-coups',
+  Gladiator: 'Gladiateur', Templar: 'Templier', Assassin: 'Assassin', Ranger: 'Rôdeur', Sorcerer: 'Sorcier', Spiritmaster: 'Spiritualiste', Cleric: 'Clerc', Chanter: 'Aède',
+  'Nezekan board route planner': 'Planificateur du plateau de Nezekan', 'Nezekan board route planner.': 'Planificateur du plateau de Nezekan.',
+  'Zikel board route planner': 'Planificateur du plateau de Zikel', 'Zikel board route planner.': 'Planificateur du plateau de Zikel.',
+  'Vaizel board route planner': 'Planificateur du plateau de Vaizel', 'Vaizel board route planner.': 'Planificateur du plateau de Vaizel.',
+  'Triniel board route planner': 'Planificateur du plateau de Triniel', 'Triniel board route planner.': 'Planificateur du plateau de Triniel.',
+  Class: 'Classe', Skills: 'Compétences', 'Skills.': 'Compétences.', 'Buy later': 'À acheter plus tard', Remove: 'Retirer', 'Remove {name}': 'Retirer {name}',
+  'More crystals expected later': 'Cristaux encore attendus plus tard',
+  'Optional. The route is then planned for the larger total, so what you buy now never has to be reset.': 'Facultatif. Le chemin est alors prévu pour le total final : ce que vous achetez maintenant n’aura jamais à être réaffecté.',
+  'A skill level cannot be scored. Tick the skills you want: the route reaches them first and spends the rest on stats.': 'Un niveau de compétence ne se chiffre pas. Cochez les compétences voulues : le chemin les atteint d’abord et dépense le reste en stats.',
+  'Players you follow.': 'Joueurs que vous suivez.',
+  'The game publishes no ranking to read, so the list is yours: add up to ten players whose boards you want to learn from. Each board is valued with your stats.': 'Le jeu ne publie aucun classement lisible, la liste est donc la vôtre : ajoutez jusqu’à dix joueurs dont les plateaux vous inspirent. Chaque plateau est évalué avec vos stats.',
+  'Nodes these players own': 'Nœuds que ces joueurs possèdent',
+  'Planned toward {total}: everything you buy now is on the best board for {total}, so nothing has to be reset on the way. The greyed steps of the buy order come later.': 'Prévu pour {total} : tout ce que vous achetez maintenant fait partie du meilleur plateau à {total}, donc rien n’est à réaffecter en chemin. Les étapes grisées de l’ordre d’achat viennent plus tard.',
+  'Today that gives up {x} of what the best board for {now} alone would bring.': 'Aujourd’hui, cela renonce à {x} de ce qu’apporterait le meilleur plateau pour {now} seulement.',
+  'Today it is as good as the best board for {now} alone.': 'Aujourd’hui, c’est aussi bon que le meilleur plateau pour {now} seulement.',
+  'All {n} wanted skill nodes are on the route.': 'Les {n} nœuds de compétence voulus sont sur le chemin.',
+  '{a} of {n} wanted skill nodes fit in these crystals.': '{a} des {n} nœuds de compétence voulus tiennent dans ces cristaux.',
+  'Keep or reset: starting over with all {crystals} would be {x} better for your goal, and would move {n} of your nodes.': 'Garder ou réinitialiser : repartir de zéro avec {crystals} serait {x} meilleur pour votre objectif, et déplacerait {n} de vos nœuds.',
+  'Keep or reset: starting over would gain nothing. What you own already sits on the best board.': 'Garder ou réinitialiser : repartir de zéro n’apporterait rien. Ce que vous possédez est déjà sur le meilleur plateau.',
+  'The darker a node, the more of these players own it. {common} nodes are owned by at least half of them; this plan takes {shared} of those.': 'Plus un nœud est foncé, plus ces joueurs sont nombreux à le posséder. {common} nœuds sont possédés par au moins la moitié d’entre eux ; ce plan en prend {shared}.',
+  'The other boards will use this character too, without loading again.': 'Les autres plateaux utiliseront aussi ce personnage, sans le recharger.',
+  'The list is full. Remove a player first.': 'La liste est pleine. Retirez d’abord un joueur.',
+  '{name} added: {n} nodes open on this board.': '{name} ajouté : {n} nœuds ouverts sur ce plateau.',
+  'A class board: general stats and skill levels. Stats are scored in PvE; skills are not scored, tick the ones you want. Orange is what to buy, green is what you own.': 'Un plateau de classe : stats générales et niveaux de compétence. Les stats sont évaluées en JcE ; les compétences ne sont pas chiffrées, cochez celles que vous voulez. En orange ce qu’il faut acheter, en vert ce que vous possédez.',
+  'What the stats outside the one-hit formula are worth to you. These defaults are guesses: set them from your own rotation.': 'Ce que valent pour vous les stats hors de la formule d’un coup. Ces valeurs par défaut sont des suppositions : réglez-les d’après votre rotation.',
+  'What 1% Combat Speed is worth, as % damage': 'Ce que vaut 1 % de VIT de combat, en % de dégâts',
+  'What 1% Cooldown Reduction is worth, as % damage': 'Ce que vaut 1 % de réduction du temps de recharge, en % de dégâts',
+  'What 1% Multi-hit Chance is worth, as % damage': 'Ce que vaut 1 % de taux multi-coups, en % de dégâts',
+  'Without the nodes of this board. Stats are valued in PvE, against the selected encounter; skill levels are not valued at all.': 'Sans les nœuds de ce plateau. Les stats sont évaluées en JcE, contre le combat choisi ; les niveaux de compétence ne sont pas évalués.',
+  'One node of each kind on top of what you own, against the selected encounter, sorted by worth per crystal for your goal. Skill nodes show no worth: tick the ones you want under Skills.': 'Un nœud de chaque sorte en plus de ce que vous possédez, contre le combat choisi, trié par valeur par cristal pour votre objectif. Les nœuds de compétence n’affichent aucune valeur : cochez ceux que vous voulez dans Compétences.',
+  'Counted as {x}% damage per 1%, the value you set': 'Compté comme {x} % de dégâts par 1 %, la valeur que vous avez fixée',
+  'Bosses do not multi-hit': 'Les boss ne font pas de multi-coups',
+  '{v}% more on each crit, {p} of your hits': '{v} % de plus sur chaque critique, {p} de vos coups',
+  'A skill level: not scored. Tick it under Skills to make the route reach it.': 'Un niveau de compétence : non chiffré. Cochez-le dans Compétences pour que le chemin l’atteigne.',
+  '{a} + {n} Attack Bonus from nodes': '{a} + {n} d’ATQ supplémentaire des nœuds',
+  'Speed, cooldown and multi-hit': 'Vitesse, recharge et multi-coups',
+  '{s} Combat Speed, {c} Cooldown Reduction and {m} Multi-hit Chance from nodes, at the worth you set': '{s} de VIT de combat, {c} de réduction du temps de recharge et {m} de taux multi-coups des nœuds, à la valeur que vous avez fixée',
+});
+
 const LANG = (() => {
   if (typeof localStorage === 'undefined') return 'en';
   try { const s = localStorage.getItem('ariel-lang'); if (s === 'fr' || s === 'en') return s; } catch (e) {}
@@ -395,13 +439,14 @@ if (typeof module !== 'undefined' && require.main === module) {
   for (const src of [html.slice(cut), read('ui.js')]) {
     for (const m of src.matchAll(/\b[TL]\((?:[^'`()]*\?\s*)?'((?:[^'\\]|\\.)*)'(?:\s*:\s*'((?:[^'\\]|\\.)*)')?/g)) { keys.add(unescape(m[1])); if (m[2]) keys.add(unescape(m[2])); }
     for (const m of src.matchAll(/\bL\(`([^`]*)`\)/g)) keys.add(m[1]);
-    for (const m of src.matchAll(/const (?:SIDES|GOAL_NAMES|FACTIONS|MODE_HINTS) = \{([^}]*)\}/g)) for (const k of m[1].matchAll(/: '([^']*)'/g)) keys.add(k[1]);
+    for (const m of src.matchAll(/const (?:SIDES|GOAL_NAMES|FACTIONS|MODE_HINTS|CLASS_NAMES) = \{([^}]*)\}/g)) for (const k of m[1].matchAll(/: '([^']*)'/g)) keys.add(k[1]);
   }
   // stat names, targets, comparison strategies, regions and messages from the other scripts, for both boards
   const P = require('./planner.js'), C = require('./character.js');
-  for (const id of ['ariel', 'azphel']) {
+  for (const id of ['ariel', 'azphel', ...P.CLASS_BOARDS]) {
     const B = P.make(id);
-    for (const n of B.NODES) for (const e of n.fx) keys.add(e[0]);
+    for (const n of B.NODES) if (!n.isSkill) for (const e of n.fx) keys.add(e[0]);  // skill names: SKILLS_FR in boards.js
+    keys.add(B.BOARD.name + ' board route planner'); keys.add(B.BOARD.name + ' board route planner.');
     for (const t of B.TARGETS) { keys.add(t.name); keys.add(t.note); }
     for (const b of B.baselines(1, B.DEFAULT_BUILD, 'dps', [], B.TARGETS[0])) keys.add(b.name);
   }
