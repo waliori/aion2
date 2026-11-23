@@ -83,6 +83,12 @@
           </div>
         </fieldset>
         <div class="lang" id="sub-switch" role="group" aria-label="Board shown" hidden></div>
+        <!-- like the layers of a map: pick a family, then the kinds of node to light up on the board -->
+        <div class="finder" role="group" aria-label="Highlight nodes">
+          <span class="lbl">Highlight</span>
+          <div id="types" class="types"></div>
+          <button class="btn btn--quiet" id="types-clear" type="button" hidden>Clear</button>
+        </div>
       </div>
       <div class="boardwrap"><div id="board" role="group" aria-label="Daevanion board"></div></div>
       <p id="hint" aria-live="polite"></p>
@@ -105,11 +111,6 @@
         <li><span class="pips"><i></i><i></i><i></i></span>One tick per crystal of cost</li>
         <li>Two-crystal nodes give two stats</li>
       </ul>
-      <details class="finder">
-        <summary>Find a kind of node on the board</summary>
-        <p class="note">Click a type or a family to colour its nodes on the board.</p>
-        <div id="types" class="types" role="group" aria-label="Node types"></div>
-      </details>
       <p id="tagline" class="note"></p>
     </section>
 
@@ -509,18 +510,31 @@ function paintTypes() {
   tiles.forEach((tile, i) => tile.classList.toggle('lit', P.NODES[i].fx.some(e => on.has(e[0]))));
   document.querySelectorAll('#types .type').forEach(b => b.setAttribute('aria-pressed', litTypes.has(b.dataset.stat)));
   document.querySelectorAll('#types .family').forEach(b => b.setAttribute('aria-pressed', b.dataset.stats.split('|').every(x => litTypes.has(x))));
+  // a family's button says how many of its kinds are lit
+  document.querySelectorAll('#types .famchip').forEach(b => { const n = b.dataset.stats.split('|').filter(x => litTypes.has(x)).length; b.textContent = b.dataset.name + (n ? ' ' + n : ''); b.classList.toggle('on', n > 0); });
+  $('types-clear').hidden = !litTypes.size;
 }
 const peeker = (b, stats, text) => {
   const peek = () => { hoverTypes = stats; paintTypes(); hint(text); }, leave = () => { hoverTypes = []; paintTypes(); };
   b.addEventListener('mouseenter', peek); b.addEventListener('focus', peek); b.addEventListener('mouseleave', leave); b.addEventListener('blur', leave);
 };
-$('types').replaceChildren(...FAMILIES.flatMap(([name, key, stats]) => {
+// one button per family above the board; it opens the list of that family's kinds of node, with "All of them" first
+$('types').replaceChildren(...FAMILIES.map(([name, key, stats], k) => {
   const names = stats.map(x => x[0]), count = P.NODES.filter(n => names.some(s => gives(n, s))).length;
-  const head = el('button', 'family', T(name)), famText = T('{name}: {nodes}', { name: T(name), nodes: nodesText(count) });
-  head.type = 'button'; head.dataset.stats = names.join('|'); head.style.setProperty('--fam', `var(--fam-${key}-2)`); head.title = famText; head.setAttribute('aria-label', famText);
+  const open = el('button', 'famchip', T(name)), list = el('div', 'typelist'), head = el('button', 'family', T('All of them')), famText = T('{name}: {nodes}', { name: T(name), nodes: nodesText(count) });
+  open.type = head.type = 'button'; open.dataset.stats = head.dataset.stats = names.join('|'); open.dataset.name = T(name);
+  for (const b of [open, head]) b.style.setProperty('--fam', `var(--fam-${key}-2)`);
+  list.id = 'types-' + k; list.popover = 'auto'; open.popoverTargetElement = list; open.setAttribute('aria-haspopup', 'true');
+  list.addEventListener('toggle', e => {
+    if (e.newState !== 'open') return;
+    const r = open.getBoundingClientRect(), w = list.offsetWidth, vw = document.documentElement.clientWidth, side = $('board').getBoundingClientRect().right + 8;
+    // beside the board when the window has room, so the nodes it lights stay in view; under its button otherwise
+    list.style.left = Math.max(8, Math.min(side + w + 8 <= vw ? side : r.left, vw - w - 8)) + 'px'; list.style.top = r.bottom + 4 + 'px';
+  });
+  head.title = famText; head.setAttribute('aria-label', famText);
   head.addEventListener('click', () => { const all = names.every(x => litTypes.has(x)); for (const x of names) all ? litTypes.delete(x) : litTypes.add(x); paintTypes(); });
   peeker(head, names, famText);
-  return [head, ...stats.map(([stat]) => {
+  list.append(head, ...stats.map(([stat]) => {
     const nodes = P.NODES.filter(n => gives(n, stat)), total = nodes.reduce((a, n) => a + n.fx.find(e => e[0] === stat)[1], 0), pct = nodes[0].fx.find(e => e[0] === stat)[2] ? '%' : '';
     const b = el('button', 'type'), full = T('{name}: {nodes}, +{total} in total', { name: T(stat), nodes: nodesText(nodes.length), total: dec(total) + pct });
     b.type = 'button'; b.dataset.stat = stat; famVars(b, [stat]); b.setAttribute('aria-label', full); b.title = full;
@@ -529,8 +543,11 @@ $('types').replaceChildren(...FAMILIES.flatMap(([name, key, stats]) => {
     b.addEventListener('click', () => { if (!litTypes.delete(stat)) litTypes.add(stat); paintTypes(); });
     peeker(b, [stat], full);
     return b;
-  })];
+  }));
+  const wrap = el('span'); wrap.append(open, list); return wrap;
 }));
+$('types-clear').addEventListener('click', () => { litTypes.clear(); paintTypes(); });
+
 
 // the tooltip of a board node: each stat in full, its cost, and where it stands in the plan
 let tipAt = [0, 0];

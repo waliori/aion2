@@ -415,6 +415,7 @@ Object.assign(FR, {
 
 // the settings bar, the character and skills dialogs, the loader
 Object.assign(FR, {
+  'Highlight': 'Surligner', 'Highlight nodes': 'Surligner des nœuds', 'All of them': 'Tous', 'Clear': 'Effacer',
   'Character': 'Personnage', 'Load my character': 'Charger mon personnage', 'Change': 'Changer', 'Expected later': 'Attendus plus tard', 'Choose skills': 'Choisir les compétences',
   'Your crystals: all of them, placed or free. The route spends them from an empty board.': 'Vos cristaux : tous, placés ou libres. Le chemin les dépense à partir d’un plateau vide.',
   'Expected later: optional, the route is then planned for the larger total so nothing has to be reset.': 'Attendus plus tard : facultatif, le chemin est alors prévu pour le total final et rien n’aura à être réaffecté.',
