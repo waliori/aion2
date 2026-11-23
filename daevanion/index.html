@@ -322,8 +322,10 @@ const MAX = P.BOARD.total_cost;  // crystals in the whole board
 const STORE = B.store + (P.cls ? '-' + P.cls : '');  // a class board keeps its own settings per class
 const CLASS_NAMES = { gladiator: 'Gladiator', templar: 'Templar', assassin: 'Assassin', ranger: 'Ranger', sorcerer: 'Sorcerer', spiritmaster: 'Spiritmaster', cleric: 'Cleric', chanter: 'Chanter' };
 const SHORT = Object.assign({}, LANG === 'fr' ? B.shortFr : B.short);
-// a skill node is labelled with the skill's initials
-for (const s of P.skills) { const w = T(s).split(/[\s'’-]+/).filter(x => x.length > 2 || /^[A-ZÀ-Ý]/.test(x)); SHORT[s] = w.length > 1 ? w.map(x => x[0].toUpperCase()).join('').slice(0, 4) : T(s).slice(0, 4); }
+// a skill node is labelled with the skill's initials; two skills with the same initials get more letters of each word
+const skillCode = (t, n) => { const w = t.split(/[\s'’-]+/).filter(x => x.length > 2 || /^[A-ZÀ-Ý]/.test(x)); return w.length > 1 ? w.map(x => x[0].toUpperCase() + x.slice(1, n)).join('').slice(0, 4) : t.slice(0, 4); };
+for (const s of P.skills) SHORT[s] = skillCode(T(s), 1);
+for (let n = 2; n <= 3; n++) for (const s of P.skills.filter(s => P.skills.some(o => o !== s && SHORT[o] === SHORT[s]))) SHORT[s] = skillCode(T(s), n);
 // the families of stats, keeping only what this board really has (the four class boards do not all carry the same stats)
 const FAMILIES = [...B.families, [L('Skills'), 'skl', P.skills.map(s => [s, 1])]]
   .map(([name, key, stats]) => [name, key, stats.filter(([st]) => P.NODES.some(n => n.fx.some(e => e[0] === st)))]).filter(f => f[2].length);

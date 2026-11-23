@@ -82,7 +82,7 @@ input::placeholder { color: var(--color-muted); }
 /* the workbench: setup, board, results */
 .bench { display: grid; grid-template-columns: var(--rail) max-content minmax(340px, 1fr); gap: var(--space-lg); align-items: start; padding-block: var(--space-sm) var(--space-2xl); }
 @media (max-width: 84rem) { .bench { grid-template-columns: max-content minmax(320px, 1fr); } .rail { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); } :root { --cell: clamp(28px, min(3.2vw, 5.2vh), 46px); } }
-@media (max-width: 62rem) { .bench { grid-template-columns: minmax(0, 1fr); } .rail { grid-template-columns: minmax(0, 1fr); } :root { --cell: clamp(28px, 5.4vw, 46px); } }
+@media (max-width: 62rem) { .bench { grid-template-columns: minmax(0, 1fr); } .bench > .rail { display: contents; } .sheet { order: 1; } .rail > .sheetcard ~ .sheetcard { order: 2; } .bench > .panel { order: 3; } :root { --cell: clamp(28px, 5.4vw, 46px); } }
 .rail { display: grid; gap: var(--space-md); min-width: 0; }
 /* a ruled sheet: white, a hairline, no lift. Only the board lifts. */
 .sheetcard { min-width: 0; padding: var(--space-md); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); background: var(--color-paper-2); }
