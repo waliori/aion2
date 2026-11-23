@@ -94,6 +94,7 @@
       <p id="tagline" class="note"></p>
       <div class="boardwrap"><div id="board" role="group" aria-label="Daevanion board"></div></div>
       <p id="hint" aria-live="polite"></p>
+      <div id="tip" role="tooltip" hidden></div>
       <div id="mine-box" class="stack" hidden>
         <p id="mine-note"></p>
         <div class="lookup">
@@ -423,9 +424,12 @@ const tiles = P.NODES.map((n, i) => {
   b.type = 'button'; b.style.gridColumn = n.x + 1; b.style.gridRow = n.y + 1;
   if (i === P.START) { b.disabled = true; b.setAttribute('aria-label', T('Start')); b.textContent = T('Start'); }
   else {
-    const tell = () => hint(`${describe(n)}, ${cr(n.cost)}`);
-    b.addEventListener('mouseenter', tell); b.addEventListener('focus', tell);
-    b.addEventListener('click', () => (state.mode === 'plan' ? toggleManual(i) : toggleOwned(i)));
+    // a mouse gets the full effect in a tooltip at the pointer, the keyboard gets it under the node, a finger in the line under the board
+    b.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') showTip(i, e.clientX, e.clientY); });
+    b.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse') hint(`${describe(n)}, ${cr(n.cost)}`); });
+    b.addEventListener('pointerleave', hideTip); b.addEventListener('blur', hideTip);
+    b.addEventListener('focus', () => { if (b.matches(':focus-visible')) { const r = b.getBoundingClientRect(); showTip(i, r.left + r.width / 2 - 16, r.bottom - 12); } });
+    b.addEventListener('click', e => { (state.mode === 'plan' ? toggleManual(i) : toggleOwned(i)); if (!$('tip').hidden) showTip(i, tipAt[0], tipAt[1]); });
   }
   $('board').appendChild(b);
   return b;
@@ -467,6 +471,19 @@ $('types').replaceChildren(...FAMILIES.flatMap(([name, key, stats]) => {
   })];
 }));
 
+// the tooltip of a board node: each stat in full, its cost, and where it stands in the plan
+let tipAt = [0, 0];
+function showTip(i, x, y) {
+  const n = P.NODES[i], tip = $('tip'), pad = 8;
+  tip.replaceChildren(...n.fx.map(e => el('strong', '', effect(e))), el('span', '', cr(n.cost)));
+  if (tiles[i].dataset.status) tip.appendChild(el('span', '', tiles[i].dataset.status));
+  tip.hidden = false; tipAt = [x, y];
+  const r = tip.getBoundingClientRect();  // beside the pointer, flipped to the other side at the window's edges
+  const left = x + 16 + r.width > innerWidth - pad ? x - r.width - 12 : x + 16, top = y + 20 + r.height > innerHeight - pad ? y - r.height - 12 : y + 20;
+  tip.style.transform = `translate(${Math.max(pad, left)}px, ${Math.max(pad, top)}px)`;
+}
+function hideTip() { $('tip').hidden = true; }
+window.addEventListener('scroll', hideTip, true);
 function hint(text, warn) { $('hint').textContent = text; $('hint').classList.toggle('warn', !!warn); }
 
 function toggleOwned(i) {
@@ -518,7 +535,9 @@ function render() {
     const pips = el('span', 'pips');  // cost: one tick per crystal
     for (let k = 0; k < n.cost; k++) pips.appendChild(el('i'));
     tile.appendChild(pips);
-    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (planning ? (mine ? T(', in my plan') : '') : owned ? T(', owned') : s && showRoute ? T(wait.has(i) ? ', buy later as step {s}' : ', buy as step {s}', { s }) : ''));
+    const status = planning ? (mine ? T(', in my plan') : '') : owned ? T(', owned') : s && showRoute ? T(wait.has(i) ? ', buy later as step {s}' : ', buy as step {s}', { s }) : '';
+    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + status);
+    tile.dataset.status = status.slice(2, 3).toUpperCase() + status.slice(3);  // "Buy as step 4", for the tooltip
     tile.setAttribute('aria-pressed', planning ? mine : owned);
   });
   paintTypes();  // render() rebuilt the tiles' classes
