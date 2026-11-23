@@ -13,12 +13,6 @@
 <header class="topbar"><div class="container">
   <h1 id="page-heading">Ariel board route planner.</h1>
   <div class="lang" role="group" aria-label="Board" id="board-switch"></div>
-  <select id="class-pick" aria-label="Class" hidden></select>
-  <div id="char-current" class="current" hidden>
-    <p id="char-who"></p>
-    <button class="btn btn--quiet" id="char-refresh" type="button">Refresh</button>
-    <button class="btn btn--quiet" id="char-change" type="button">Change character</button>
-  </div>
   <div class="lang" role="group" aria-label="Language">
     <button type="button" data-lang="en" lang="en">English</button>
     <button type="button" data-lang="fr" lang="fr">Français</button>
@@ -26,74 +20,70 @@
 </div></header>
 
 <main class="container">
-  <section class="charstrip" aria-label="Your character">
-    <form id="char-form" class="lookup">
-      <label for="char-name">Your character</label>
-      <select id="char-region" name="region" aria-label="Region"></select>
-      <select id="char-faction" name="faction" aria-label="Faction"></select>
-      <select id="char-server" name="server" aria-label="Server"></select>
-      <input id="char-name" name="character" type="search" placeholder="Character name" required minlength="2" autocomplete="off">
-      <button class="btn" type="submit">Load</button>
-    </form>
-    <ul id="char-hits" class="hits"></ul>
-    <p id="char-status" class="note" aria-live="polite"></p>
+  <!-- everything that decides the plan, in one bar, in the order you fill it -->
+  <section class="planbar sheetcard" aria-label="Plan settings">
+    <div class="field who">
+      <span class="lbl">Character</span>
+      <div class="lookup">
+        <button class="btn" id="char-open" type="button">Load my character</button>
+        <span id="char-current" class="current" hidden>
+          <strong id="char-who"></strong>
+          <button class="btn btn--quiet" id="char-refresh" type="button">Refresh</button>
+          <button class="btn btn--quiet" id="char-change" type="button">Change</button>
+        </span>
+      </div>
+    </div>
+    <div class="field" id="class-field" hidden>
+      <label for="class-pick">Class</label>
+      <select id="class-pick"></select>
+    </div>
+    <div class="field">
+      <label for="crystals">Your crystals</label>
+      <div class="crystals">
+        <input id="crystals" name="crystals" type="number" min="0" max="232" value="30" inputmode="numeric" aria-describedby="crystals-note">
+        <input id="slider" type="range" min="0" max="232" value="30" aria-label="Your crystals">
+      </div>
+    </div>
+    <div class="field">
+      <label for="later">Expected later</label>
+      <input id="later" name="later" type="number" min="0" value="0" inputmode="numeric" aria-describedby="later-help">
+    </div>
+    <fieldset class="field">
+      <legend>Goal</legend>
+      <div class="seg">
+        <input type="radio" name="goal" id="goal-dps" value="dps" checked><label for="goal-dps">Damage</label>
+        <input type="radio" name="goal" id="goal-tank" value="tank"><label for="goal-tank">Survival</label>
+        <input type="radio" name="goal" id="goal-both" value="balanced"><label for="goal-both">Both</label>
+      </div>
+    </fieldset>
+    <div class="field">
+      <label for="target">Against</label>
+      <select id="target" name="target" aria-describedby="target-note"></select>
+    </div>
+    <div class="field" id="skills-card" hidden>
+      <span class="lbl">Skills</span>
+      <button class="btn btn--quiet" id="skills-open" type="button">Choose skills</button>
+    </div>
+    <div class="help">
+      <p id="char-note" class="note" aria-live="polite"></p>
+      <p class="note"><span id="crystals-note">Your crystals: all of them, placed or free. The route spends them from an empty board.</span> <span id="later-help">Expected later: optional, the route is then planned for the larger total so nothing has to be reset.</span></p>
+      <p id="target-note" class="note"></p>
+    </div>
   </section>
 
   <div class="bench">
-    <aside class="rail" aria-label="Settings">
-      <section class="sheetcard">
-        <h2>Setup.</h2>
-        <div class="field">
-          <label for="crystals">Your crystals</label>
-          <div class="crystals">
-            <input id="crystals" name="crystals" type="number" min="0" max="232" value="30" inputmode="numeric">
-            <input id="slider" type="range" min="0" max="232" value="30" aria-label="Your crystals">
-          </div>
-          <p class="note" id="crystals-note">All of them: those already in your board and those still free. The recommended route spends them from an empty board.</p>
-        </div>
-        <div class="field">
-          <label for="later">More crystals expected later</label>
-          <input id="later" name="later" type="number" min="0" value="0" inputmode="numeric">
-          <p class="note">Optional. The route is then planned for the larger total, so what you buy now never has to be reset.</p>
-        </div>
-        <fieldset class="field">
-          <legend>Goal</legend>
+    <section class="sheet" aria-label="Board">
+      <div class="boardhead">
+        <fieldset class="field mode">
+          <legend class="visually-hidden">Show on the board</legend>
           <div class="seg">
-            <input type="radio" name="goal" id="goal-dps" value="dps" checked><label for="goal-dps">Damage</label>
-            <input type="radio" name="goal" id="goal-tank" value="tank"><label for="goal-tank">Survival</label>
-            <input type="radio" name="goal" id="goal-both" value="balanced"><label for="goal-both">Both</label>
+            <input type="radio" name="mode" id="mode-rec" value="rec" checked><label for="mode-rec">Recommended route</label>
+            <input type="radio" name="mode" id="mode-own" value="own"><label for="mode-own">What I own</label>
+            <input type="radio" name="mode" id="mode-plan" value="plan"><label for="mode-plan">My own plan</label>
           </div>
         </fieldset>
-        <div class="field">
-          <label for="target">Against</label>
-          <select id="target" name="target"></select>
-          <p id="target-note" class="note"></p>
-        </div>
-      </section>
-      <section class="sheetcard" id="skills-card" hidden>
-        <h2>Skills.</h2>
-        <p class="note">A skill level cannot be scored. Tick the skills you want: the route reaches them first and spends the rest on stats.</p>
-        <div id="skills" class="checks" role="group" aria-label="Skills"></div>
-        <p id="skills-note" class="note" aria-live="polite"></p>
-      </section>
-      <section class="sheetcard">
-        <h2>Node types.</h2>
-        <p class="note">Click a type or a family to colour its nodes on the board.</p>
-        <div id="types" class="types" role="group" aria-label="Node types"></div>
-      </section>
-    </aside>
-
-    <section class="sheet" aria-label="Board">
-      <fieldset class="field mode">
-        <legend>Show on the board</legend>
-        <div class="seg">
-          <input type="radio" name="mode" id="mode-rec" value="rec" checked><label for="mode-rec">Recommended route</label>
-          <input type="radio" name="mode" id="mode-own" value="own"><label for="mode-own">What I own</label>
-          <input type="radio" name="mode" id="mode-plan" value="plan"><label for="mode-plan">My own plan</label>
-        </div>
-      </fieldset>
-      <p id="tagline" class="note"></p>
-      <div class="lang" id="sub-switch" role="group" aria-label="Board shown" hidden></div>
+        <div class="lang" id="sub-switch" role="group" aria-label="Board shown" hidden></div>
+      </div>
       <div class="boardwrap"><div id="board" role="group" aria-label="Daevanion board"></div></div>
       <p id="hint" aria-live="polite"></p>
       <div id="tip" role="tooltip" hidden></div>
@@ -115,6 +105,12 @@
         <li><span class="pips"><i></i><i></i><i></i></span>One tick per crystal of cost</li>
         <li>Two-crystal nodes give two stats</li>
       </ul>
+      <details class="finder">
+        <summary>Find a kind of node on the board</summary>
+        <p class="note">Click a type or a family to colour its nodes on the board.</p>
+        <div id="types" class="types" role="group" aria-label="Node types"></div>
+      </details>
+      <p id="tagline" class="note"></p>
     </section>
 
     <div class="panel sheetcard">
@@ -314,6 +310,32 @@
   </div>
 </main>
 
+<dialog id="char-dialog" aria-labelledby="char-title">
+  <h2 id="char-title">Load my character.</h2>
+  <p class="note">Read from the official AION 2 site: your stats, and the nodes you own on every board.</p>
+  <form id="char-form" class="lookup">
+    <select id="char-region" name="region" aria-label="Region"></select>
+    <select id="char-faction" name="faction" aria-label="Faction"></select>
+    <select id="char-server" name="server" aria-label="Server"></select>
+    <input id="char-name" name="character" type="search" placeholder="Character name" aria-label="Character name" required minlength="2" autocomplete="off">
+    <button class="btn" type="submit">Find</button>
+  </form>
+  <p id="char-status" class="note" aria-live="polite"></p>
+  <ul id="char-hits" class="hits"></ul>
+  <form method="dialog"><button class="btn btn--quiet">Close</button></form>
+</dialog>
+<dialog id="skills-dialog" aria-labelledby="skills-title">
+  <h2 id="skills-title">Skills to reach.</h2>
+  <p class="note">A skill level cannot be scored. Tick the skills you want: the route reaches them first and spends the rest on stats.</p>
+  <div id="skills" class="checks" role="group" aria-label="Skills"></div>
+  <p id="skills-note" class="note" aria-live="polite"></p>
+  <form method="dialog"><button class="btn">Done</button></form>
+</dialog>
+<dialog id="loading" aria-labelledby="loading-text">
+  <span class="spinner" aria-hidden="true"></span>
+  <p id="loading-text" aria-live="polite"></p>
+  <progress id="loading-bar"></progress>
+</dialog>
 <script src="i18n.js"></script>
 <script src="boards.js"></script>
 <script src="planner.js"></script>
@@ -383,7 +405,7 @@ $('board-switch').replaceChildren(...Object.entries(UI).map(([id, u]) => {
   b.addEventListener('click', () => { if (id !== P.id) go(id, lastClass); });
   return b;
 }));
-$('class-pick').hidden = !B.classBoard;
+$('class-field').hidden = !B.classBoard;
 $('class-pick').replaceChildren(...P.CLASSES.map(c => new Option(T(CLASS_NAMES[c] || c), c)));
 $('class-pick').value = P.cls;
 $('class-pick').addEventListener('change', e => { try { localStorage.setItem('daevanion-class', e.target.value); } catch (err) {} go(P.id, e.target.value); });
@@ -598,7 +620,8 @@ function render() {
   $('target-note').textContent = T(t.note);
 
   // --- Plan ---
-  $('r-dmg').textContent = signed(vs(d1, d0)); $('r-ehp').textContent = signed(vs(e1, e0)); $('r-spent').textContent = T('{a} of {b}', { a: spent, b: state.crystals });
+  // like every figure on this tab: against an empty board
+  $('r-dmg').textContent = signed(d1 - 1); $('r-ehp').textContent = signed(e1 - 1); $('r-spent').textContent = T('{a} of {b}', { a: spent, b: state.crystals });
   $('gains').textContent = plan.seq.length ? T('You gain: {list}.', { list: gainsText(P.totals(plan.seq)) })
     : T(state.crystals ? 'Nothing left on the board is worth buying for this goal.' : 'Enter how many crystals you have.');
   const total = cr(state.crystals + later), share = v => fx((1 - Math.exp(-v)) * 100, 2) + '%';
@@ -609,6 +632,7 @@ function render() {
     const wanted = P.NODES.map((n, i) => i).filter(i => P.NODES[i].isSkill && state.must.includes(P.NODES[i].stat)), got = wanted.filter(i => plan.chosen.has(i)).length;
     $('skills-note').textContent = !wanted.length ? '' : got === wanted.length ? T('All {n} wanted skill nodes are on the route.', { n: wanted.length }) : T('{a} of {n} wanted skill nodes fit in these crystals.', { a: got, n: wanted.length });
     $('skills-note').classList.toggle('warn', got < wanted.length);
+    $('skills-open').textContent = state.must.length ? T('{n} skills chosen', { n: state.must.length }) : T('Choose skills');
   }
   $('n-dmg').textContent = signed(d0 - 1); $('n-ehp').textContent = signed(e0 - 1); $('n-spent').textContent = ownedCost;
   $('now-figures').hidden = !state.owned.size;
@@ -650,7 +674,7 @@ function render() {
     ways.push({ name: T('My board now'), chosen: P.base(state.owned), cost: ownedCost });
     // keep or reset: what the route would bring over the board you have, and how many of your nodes it leaves out
     const gain = goalValue(plan.chosen) - goalValue(state.owned), moved = [...state.owned].filter(i => !plan.chosen.has(i)).length, facts = { n: state.owned.size, kept: state.owned.size - moved, moved, x: fx((Math.exp(gain) - 1) * 100, 2) + '%' };
-    $('reset-note').textContent = T('The figures above compare the route with your board now. The route keeps {kept} of your {n} nodes and leaves out {moved}.', facts)
+    $('reset-note').textContent = T('The route keeps {kept} of your {n} nodes and leaves out {moved}.', facts)
       + ' ' + (gain > 1e-6 ? T('For your goal it is {x} better than your board.', facts) : T('For your goal it is no better than your board: keep what you have.'));
   }
   $('reset-note').hidden = !state.owned.size;
@@ -807,6 +831,21 @@ $('o-target').replaceChildren(...targetOptions());
   $(id).addEventListener('change', e => { state.cmp.other[k] = clean(e.target.value); e.target.value = state.cmp.other[k]; update(); });
 });
 
+// the loader over the whole page: a line of text, and a bar when the text counts ("Reading gear 8 of 20")
+function showLoading(text) {
+  const m = /(\d+)\D+(\d+)/.exec(text), bar = $('loading-bar');
+  $('loading-text').textContent = text;
+  if (m) { bar.max = +m[2]; bar.value = +m[1]; } else bar.removeAttribute('value');
+  if (!$('loading').open) $('loading').showModal();
+}
+function hideLoading() { if ($('loading').open) $('loading').close(); }
+$('loading').addEventListener('cancel', e => e.preventDefault());  // Escape does not dismiss it: it closes when the reading ends
+// a click on the dimmed page around a dialog closes it
+for (const id of ['char-dialog', 'skills-dialog']) $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).close(); });
+$('skills-open').addEventListener('click', () => $('skills-dialog').showModal());
+const openCharacter = () => { $('char-dialog').showModal(); $('char-name').focus(); };
+$('char-open').addEventListener('click', openCharacter);
+
 // --- characters from the official API (needs a server beside the page: the API refuses direct browser calls) ---
 const offline = location.protocol === 'file:';
 // messages from character.js arrive in English; put them in the page's language
@@ -849,7 +888,12 @@ function lookup(form, region, faction, server, name, hitsId, status, onPick) {
       $(hitsId).replaceChildren(...hits.map(h => {
         const li = el('li'), b = el('button', 'btn btn--quiet', T('{name}, {server}, {faction}, level {level}', { name: h.name, server: h.serverName, faction: T(FACTIONS[h.race] || ''), level: h.level }));
         b.type = 'button';
-        b.addEventListener('click', async () => { $(hitsId).replaceChildren(); try { await onPick(h, say); } catch (err) { say(said(err.message), true); } });
+        // reading a character takes a while: the whole page waits behind a loader that says what is being read
+        b.addEventListener('click', async () => {
+          $(hitsId).replaceChildren(); showLoading(T('Reading {name}…', { name: h.name }));
+          try { await onPick(h, (text, warn) => { say(text, warn); if (!warn) showLoading(text); }); } catch (err) { say(said(err.message), true); }
+          hideLoading();
+        });
         li.appendChild(b); return li;
       }));
     } catch (err) { say(said(err.message), true); }
@@ -871,10 +915,12 @@ function applyCharacter() {
   if (P.connected(set)) { state.owned = set; if (set.size) state.crystals = Math.min(MAX, P.spent(set)); }  // your crystals: what the game says is in your board
   return true;
 }
-function showCharacter(changing) {
+function showCharacter() {
   const h = character && character.hit;
-  $('char-current').hidden = !h; $('char-form').hidden = !!h && !changing;
-  if (h) $('char-who').textContent = T('Using {name}, {server}, {faction}, level {level}. Loaded {when}.',
+  $('char-current').hidden = !h; $('char-open').hidden = !!h;
+  if (!h) return;
+  $('char-who').textContent = `${h.name}, ${h.serverName}`;  // the bar names the character; the rest is one hover away
+  $('char-who').title = T('Using {name}, {server}, {faction}, level {level}. Loaded {when}.',
     { name: h.name, server: h.serverName, faction: T(FACTIONS[h.race] || ''), level: h.level, when: new Date(character.stamp).toLocaleString(LOCALE, { dateStyle: 'medium', timeStyle: 'short' }) });
 }
 async function fetchCharacter(hit, say) {
@@ -886,20 +932,22 @@ async function fetchCharacter(hit, say) {
   character = { cls, hit: { name: hit.name, serverName: hit.serverName, serverId: hit.serverId, characterId: hit.characterId, region: hit.region, race: hit.race, level: hit.level }, stamp: Date.now(), boards };
   try { localStorage.setItem(CHAR_KEY, JSON.stringify(character)); } catch (e) {}
   applyCharacter(); buildFields(); showCharacter(); setCrystals(state.crystals);
-  say(B.loaded(hit.name, boards[P.id].build, nodesText(state.owned.size)) + ' ' + T('The other boards will use this character too, without loading again.'));
+  $('char-note').textContent = B.loaded(hit.name, boards[P.id].build, nodesText(state.owned.size)) + ' ' + T('The other boards will use this character too, without loading again.');
+  $('char-dialog').close();
   if (B.classBoard && P.CLASSES.includes(cls) && cls !== P.cls) go(P.id, cls);  // a class board follows the class of the character you load
 }
 const charSay = lookup('char-form', 'char-region', 'char-faction', 'char-server', 'char-name', 'char-hits', 'char-status', fetchCharacter);
 $('char-refresh').addEventListener('click', async () => {
   $('char-refresh').disabled = true;
-  try { await fetchCharacter(character.hit, charSay); } catch (err) { charSay(said(err.message), true); }
-  $('char-refresh').disabled = false;
+  showLoading(T('Reading {name}…', { name: character.hit.name }));
+  try { await fetchCharacter(character.hit, text => showLoading(text)); } catch (err) { charSay(said(err.message), true); openCharacter(); }
+  hideLoading(); $('char-refresh').disabled = false;
 });
-$('char-change').addEventListener('click', () => { showCharacter(true); $('char-name').focus(); });
+$('char-change').addEventListener('click', openCharacter);
 if (offline) $('char-refresh').disabled = true;
 // a character loaded on the other board, or refreshed there, that this board has not taken yet
 if (character && character.stamp !== state.charStamp && applyCharacter())
-  charSay(T('Stats and owned nodes on this board now come from {name}, the character you loaded. Nothing was loaded again.', { name: character.hit.name }));
+  $('char-note').textContent = T('Stats and owned nodes on this board now come from {name}, the character you loaded. Nothing was loaded again.', { name: character.hit.name });
 showCharacter();
 // Azphel only: an opponent to plan against, loaded with their own Azphel board, or a copy of your own stats
 $('opp-box').hidden = !B.canLoadOpponent;

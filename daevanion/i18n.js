@@ -401,7 +401,7 @@ Object.assign(FR, {
   '{name} {used} of {of}': '{name} {used} sur {of}',
   'You have {have}.': 'Vous avez {have}.',
   '{nodes} owned for {crystals}, compared with an empty board: {list}.': '{nodes} possédés pour {crystals}, par rapport à un plateau vide : {list}.',
-  'The figures above compare the route with your board now. The route keeps {kept} of your {n} nodes and leaves out {moved}.': 'Les chiffres ci-dessus comparent le chemin à votre plateau actuel. Le chemin garde {kept} de vos {n} nœuds et en laisse {moved} de côté.',
+  'The route keeps {kept} of your {n} nodes and leaves out {moved}.': 'Le chemin garde {kept} de vos {n} nœuds et en laisse {moved} de côté.',
   'For your goal it is {x} better than your board.': 'Pour votre objectif, il est {x} meilleur que votre plateau.',
   'For your goal it is no better than your board: keep what you have.': 'Pour votre objectif, il n’est pas meilleur que votre plateau : gardez ce que vous avez.',
   'The recommended route, from an empty board with all your crystals. A green edge marks the nodes you already own.': 'Le chemin recommandé, à partir d’un plateau vide avec tous vos cristaux. Un bord vert marque les nœuds que vous possédez déjà.',
@@ -411,6 +411,18 @@ Object.assign(FR, {
   'Nezekan, Zikel, Vaizel and Triniel, paid from one pool of 416 points and planned together. Stats are scored in PvE; skill levels are not scored, tick the ones you want. Square icons are active skills, round ones passives.': 'Nezekan, Zikel, Vaizel et Triniel, payés sur une réserve commune de 416 points et planifiés ensemble. Les stats sont évaluées en JcE ; les niveaux de compétence ne sont pas chiffrés, cochez ceux que vous voulez. Icônes carrées : compétences actives ; rondes : passives.',
   'Without the nodes of the four class boards. Stats are valued in PvE, against the selected encounter; skill levels are not valued at all.': 'Sans les nœuds des quatre plateaux de classe. Les stats sont évaluées en JcE, contre la rencontre choisie ; les niveaux de compétence ne sont pas évalués du tout.',
   'Passive skill': 'Compétence passive', 'Active skill': 'Compétence active',
+});
+
+// the settings bar, the character and skills dialogs, the loader
+Object.assign(FR, {
+  'Character': 'Personnage', 'Load my character': 'Charger mon personnage', 'Change': 'Changer', 'Expected later': 'Attendus plus tard', 'Choose skills': 'Choisir les compétences',
+  'Your crystals: all of them, placed or free. The route spends them from an empty board.': 'Vos cristaux : tous, placés ou libres. Le chemin les dépense à partir d’un plateau vide.',
+  'Expected later: optional, the route is then planned for the larger total so nothing has to be reset.': 'Attendus plus tard : facultatif, le chemin est alors prévu pour le total final et rien n’aura à être réaffecté.',
+  'Find a kind of node on the board': 'Trouver un type de nœud sur le plateau',
+  'Load my character.': 'Charger mon personnage.',
+  'Read from the official AION 2 site: your stats, and the nodes you own on every board.': 'Lu sur le site officiel d’AION 2 : vos stats, et les nœuds que vous possédez sur chaque plateau.',
+  'Close': 'Fermer', 'Skills to reach.': 'Compétences à atteindre.', 'Done': 'Terminé', 'Plan settings': 'Réglages du plan',
+  '{n} skills chosen': '{n} compétences choisies', 'Reading {name}…': 'Lecture de {name}…',
 });
 
 const LANG = (() => {

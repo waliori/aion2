@@ -41,7 +41,7 @@ What that cannot see: pets, wings, skill passives, buffs and class base stats. S
 
 ### What the page shows
 
-A settings strip (your character, crystals, goal, encounter), the board, and four tabs beside it:
+One settings bar holds everything that decides the plan, in the order you fill it: your character, the class (class boards), your crystals, the crystals expected later, the goal, the encounter and the skills to reach. Loading a character and choosing skills open a dialog; while a character is read, a loader covers the page and says what is being read. Under the bar sit the board, with a fold-out list to find a kind of node on it, and four tabs beside it:
 
 - **Plan**: what the plan adds (damage dealt, effective HP, crystals spent), the same figures for the board you own now, and the buy order with the running gain.
 - **Why**: the calculation, all from your own numbers. One average hit on an empty board, on your board now and after the plan; what one node of each kind is worth per crystal, with the arithmetic; the plan against other ways of spending the same crystals; and the same route against every encounter.
