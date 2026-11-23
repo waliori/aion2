@@ -222,6 +222,14 @@ Object.assign(FR, {
   'Plan the best route through the AION 2 Daevanion boards, Ariel for PvE and Azphel for PvP, see the numbers behind it, and compare boards side by side.':
     'Trouvez le meilleur chemin sur les plateaux Daevanion d’AION 2, Ariel pour le JcE et Azphel pour le JcJ, voyez les calculs derrière, et comparez deux plateaux côte à côte.',
   'Daevanion board': 'Plateau Daevanion',
+  'Column, row': 'Colonne, ligne', 'Damage and effective HP are the running gain after each step.': 'Les dégâts et les PV effectifs sont le gain cumulé après chaque étape.',
+  'Setup.': 'Réglages.', 'Node types.': 'Types de nœuds.', 'Click a type or a family to colour its nodes on the board.': 'Cliquez sur un type ou une famille pour colorer ses nœuds sur le plateau.',
+  'Show on the board': 'Afficher sur le plateau', 'Recommended route': 'Chemin recommandé', 'What I own': 'Ce que je possède',
+  'Two-crystal nodes give two stats': 'Les nœuds à deux cristaux donnent deux stats',
+  'The PvE board, scored against bosses. Orange is what to buy, numbered in buying order; green is what you own.': 'Le plateau JcE, évalué contre les boss. En orange : ce qu’il faut acheter, numéroté dans l’ordre d’achat ; en vert : ce que vous possédez.',
+  'The PvP board, scored against another player. Orange is what to buy, numbered in buying order; green is what you own.': 'Le plateau JcJ, évalué contre un autre joueur. En orange : ce qu’il faut acheter, numéroté dans l’ordre d’achat ; en vert : ce que vous possédez.',
+  'The recommended route, on top of what you own. Click a node you already bought to mark it as owned.': 'Le chemin recommandé, en plus de ce que vous possédez. Cliquez sur un nœud déjà acheté pour le marquer comme possédé.',
+  'Only what you own. Click a node you already bought to mark it, or again to unmark it.': 'Seulement ce que vous possédez. Cliquez sur un nœud déjà acheté pour le marquer, ou à nouveau pour le démarquer.',
   Refresh: 'Actualiser', 'Change character': 'Changer de personnage',
   'Using {name}, {server}, {faction}, level {level}. Loaded {when}.': 'Personnage utilisé : {name}, {server}, {faction}, niveau {level}. Chargé le {when}.',
   'The other board will use this character too, without loading again.': 'L’autre plateau utilisera aussi ce personnage, sans le recharger.',
@@ -387,7 +395,7 @@ if (typeof module !== 'undefined' && require.main === module) {
   for (const src of [html.slice(cut), read('ui.js')]) {
     for (const m of src.matchAll(/\b[TL]\((?:[^'`()]*\?\s*)?'((?:[^'\\]|\\.)*)'(?:\s*:\s*'((?:[^'\\]|\\.)*)')?/g)) { keys.add(unescape(m[1])); if (m[2]) keys.add(unescape(m[2])); }
     for (const m of src.matchAll(/\bL\(`([^`]*)`\)/g)) keys.add(m[1]);
-    for (const m of src.matchAll(/const (?:SIDES|GOAL_NAMES|FACTIONS) = \{([^}]*)\}/g)) for (const k of m[1].matchAll(/: '([^']*)'/g)) keys.add(k[1]);
+    for (const m of src.matchAll(/const (?:SIDES|GOAL_NAMES|FACTIONS|MODE_HINTS) = \{([^}]*)\}/g)) for (const k of m[1].matchAll(/: '([^']*)'/g)) keys.add(k[1]);
   }
   // stat names, targets, comparison strategies, regions and messages from the other scripts, for both boards
   const P = require('./planner.js'), C = require('./character.js');

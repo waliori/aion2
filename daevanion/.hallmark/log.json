@@ -3,6 +3,31 @@
   "mode": "redesign",
   "depth": "full",
   "scope": "app",
+  "theme": "furrow",
+  "shape": "app screen",
+  "axes": "light/grotesk-sans/warm",
+  "nav": "one top bar: title, boards, character, language",
+  "signature": "the board as the one lifted notebook card: route tangerine, owned green",
+  "sections": [
+   "character strip",
+   "setup rail",
+   "node types",
+   "board with three views",
+   "plan",
+   "why",
+   "compare",
+   "stats"
+  ],
+  "waived": [
+   "39b"
+  ],
+  "prompt": "Daevanion planner workbench, light and calm",
+  "date": "2026-11-22"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
   "theme": "carnival",
   "shape": "app screen",
   "axes": "light/display-heavy/chromatic-yellow",

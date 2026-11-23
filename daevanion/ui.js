@@ -19,7 +19,7 @@ const UI = {
   ariel: {
     store: 'ariel-planner-2', label: L('Ariel, PvE'),
     title: L('Ariel board route planner'), heading: L('Ariel board route planner.'),
-    tagline: L('The PvE board. Turquoise is what to buy, in order. Red is what you own.'),
+    tagline: L('The PvE board, scored against bosses. Orange is what to buy, numbered in buying order; green is what you own.'),
     short: { 'PvE Attack': 'Atk', 'Boss Attack': 'B.Atk', 'PvE Defense': 'Def', 'Boss Defense': 'B.Def', 'PvE Accuracy': 'Acc', 'PvE Evasion': 'Eva',
       'PvE Damage Boost': 'Dmg', 'Boss Damage Boost': 'B.Dmg', 'PvE Damage Tolerance': 'Tol', 'Boss Damage Tolerance': 'B.Tol',
       'Critical Hit': 'Crit', 'Critical Hit Resist': 'C.Res', HP: 'HP', MP: 'MP' },
@@ -137,7 +137,7 @@ const UI = {
   azphel: {
     store: 'azphel-planner-1', label: L('Azphel, PvP'),
     title: L('Azphel board route planner'), heading: L('Azphel board route planner.'),
-    tagline: L('The PvP board. Turquoise is what to buy, in order. Red is what you own.'),
+    tagline: L('The PvP board, scored against another player. Orange is what to buy, numbered in buying order; green is what you own.'),
     short: { 'PvP Attack': 'Atk', 'PvP Defense': 'Def', 'PvP Accuracy': 'Acc', 'PvP Evasion': 'Eva', 'PvP Damage Boost': 'Dmg', 'PvP Damage Tolerance': 'Tol',
       'PvP Critical Hit': 'Crit', 'PvP Critical Hit Resist': 'C.Res', 'Status Effect Chance': 'St.Ch', 'Status Effect Resist': 'St.Res', HP: 'HP', MP: 'MP' },
     shortFr: { 'PvP Attack': 'ATQ', 'PvP Defense': 'DÉF', 'PvP Accuracy': 'Préc', 'PvP Evasion': 'Esq', 'PvP Damage Boost': 'DGT', 'PvP Damage Tolerance': 'Tol',

@@ -6,76 +6,81 @@
 <title>Ariel board route planner</title>
 <meta name="description" content="Plan the best route through the AION 2 Daevanion boards, Ariel for PvE and Azphel for PvP, see the numbers behind it, and compare boards side by side.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Golos+Text:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600&family=Red+Hat+Text:wght@400;500&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="planner.css">
 </head>
 <body>
-<header class="band"><div class="container">
+<header class="topbar"><div class="container">
   <h1 id="page-heading">Ariel board route planner.</h1>
-  <p id="tagline"></p>
-  <div class="switches">
-    <div class="lang" role="group" aria-label="Board" id="board-switch"></div>
-    <div class="lang" role="group" aria-label="Language">
-      <button type="button" data-lang="en" lang="en">English</button>
-      <button type="button" data-lang="fr" lang="fr">Français</button>
-    </div>
+  <div class="lang" role="group" aria-label="Board" id="board-switch"></div>
+  <div id="char-current" class="current" hidden>
+    <p id="char-who"></p>
+    <button class="btn btn--quiet" id="char-refresh" type="button">Refresh</button>
+    <button class="btn btn--quiet" id="char-change" type="button">Change character</button>
+  </div>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="en" lang="en">English</button>
+    <button type="button" data-lang="fr" lang="fr">Français</button>
   </div>
 </div></header>
 
 <main class="container">
-  <section class="setup well" aria-label="Settings">
-    <div class="field">
+  <section class="charstrip" aria-label="Your character">
+    <form id="char-form" class="lookup">
       <label for="char-name">Your character</label>
-      <div id="char-current" class="current" hidden>
-        <p id="char-who"></p>
-        <button class="btn btn--quiet" id="char-refresh" type="button">Refresh</button>
-        <button class="btn btn--quiet" id="char-change" type="button">Change character</button>
-      </div>
-      <form id="char-form" class="lookup">
-        <select id="char-region" name="region" aria-label="Region"></select>
-        <select id="char-faction" name="faction" aria-label="Faction"></select>
-        <select id="char-server" name="server" aria-label="Server"></select>
-        <input id="char-name" name="character" type="search" placeholder="Character name" required minlength="2" autocomplete="off">
-        <button class="btn" type="submit">Load</button>
-      </form>
-    </div>
-    <div class="field">
-      <label for="crystals">Crystals to spend</label>
-      <div class="crystals">
-        <input id="crystals" name="crystals" type="number" min="0" max="232" value="30" inputmode="numeric">
-        <input id="slider" type="range" min="0" max="232" value="30" aria-label="Crystals to spend">
-      </div>
-    </div>
-    <fieldset class="field">
-      <legend>Goal</legend>
-      <div class="seg">
-        <input type="radio" name="goal" id="goal-dps" value="dps" checked><label for="goal-dps">Damage</label>
-        <input type="radio" name="goal" id="goal-tank" value="tank"><label for="goal-tank">Survival</label>
-        <input type="radio" name="goal" id="goal-both" value="balanced"><label for="goal-both">Both</label>
-      </div>
-    </fieldset>
-    <div class="field">
-      <label for="target">Against</label>
-      <select id="target" name="target"></select>
-    </div>
-    <ul id="char-hits" class="hits strip-note"></ul>
-    <p id="char-status" class="note strip-note" aria-live="polite"></p>
-    <p id="target-note" class="note strip-note"></p>
+      <select id="char-region" name="region" aria-label="Region"></select>
+      <select id="char-faction" name="faction" aria-label="Faction"></select>
+      <select id="char-server" name="server" aria-label="Server"></select>
+      <input id="char-name" name="character" type="search" placeholder="Character name" required minlength="2" autocomplete="off">
+      <button class="btn" type="submit">Load</button>
+    </form>
+    <ul id="char-hits" class="hits"></ul>
+    <p id="char-status" class="note" aria-live="polite"></p>
   </section>
 
-  <div class="work">
+  <div class="bench">
+    <aside class="rail" aria-label="Settings">
+      <section class="sheetcard">
+        <h2>Setup.</h2>
+        <div class="field">
+          <label for="crystals">Crystals to spend</label>
+          <div class="crystals">
+            <input id="crystals" name="crystals" type="number" min="0" max="232" value="30" inputmode="numeric">
+            <input id="slider" type="range" min="0" max="232" value="30" aria-label="Crystals to spend">
+          </div>
+        </div>
+        <fieldset class="field">
+          <legend>Goal</legend>
+          <div class="seg">
+            <input type="radio" name="goal" id="goal-dps" value="dps" checked><label for="goal-dps">Damage</label>
+            <input type="radio" name="goal" id="goal-tank" value="tank"><label for="goal-tank">Survival</label>
+            <input type="radio" name="goal" id="goal-both" value="balanced"><label for="goal-both">Both</label>
+          </div>
+        </fieldset>
+        <div class="field">
+          <label for="target">Against</label>
+          <select id="target" name="target"></select>
+          <p id="target-note" class="note"></p>
+        </div>
+      </section>
+      <section class="sheetcard">
+        <h2>Node types.</h2>
+        <p class="note">Click a type or a family to colour its nodes on the board.</p>
+        <div id="types" class="types" role="group" aria-label="Node types"></div>
+      </section>
+    </aside>
+
     <section class="sheet" aria-label="Board">
       <fieldset class="field mode">
-        <legend>A click on the board</legend>
+        <legend>Show on the board</legend>
         <div class="seg">
-          <input type="radio" name="mode" id="mode-own" value="own" checked><label for="mode-own">Marks what I own</label>
-          <input type="radio" name="mode" id="mode-plan" value="plan"><label for="mode-plan">Builds my own plan</label>
+          <input type="radio" name="mode" id="mode-rec" value="rec" checked><label for="mode-rec">Recommended route</label>
+          <input type="radio" name="mode" id="mode-own" value="own"><label for="mode-own">What I own</label>
+          <input type="radio" name="mode" id="mode-plan" value="plan"><label for="mode-plan">My own plan</label>
         </div>
       </fieldset>
-      <div class="boardrow">
-        <div class="boardwrap"><div id="board" class="well" role="group" aria-label="Daevanion board"></div></div>
-        <div id="types" class="types" role="group" aria-label="Node types"></div>
-      </div>
+      <p id="tagline" class="note"></p>
+      <div class="boardwrap"><div id="board" role="group" aria-label="Daevanion board"></div></div>
       <p id="hint" aria-live="polite"></p>
       <div id="mine-box" class="stack" hidden>
         <p id="mine-note"></p>
@@ -91,11 +96,11 @@
         <li><span class="swatch mine"></span>My own plan</li>
         <li><span class="swatch owned"></span>Already owned</li>
         <li><span class="pips"><i></i><i></i><i></i></span>One tick per crystal of cost</li>
-        <li>Green-cost nodes give two stats. Click a type or a family beside the board to colour its nodes</li>
+        <li>Two-crystal nodes give two stats</li>
       </ul>
     </section>
 
-    <div class="panel well">
+    <div class="panel sheetcard">
       <div class="tabs" role="tablist" aria-label="Views">
         <button type="button" role="tab" id="tab-plan" aria-controls="pane-plan" data-tab="plan">Plan</button>
         <button type="button" role="tab" id="tab-why" aria-controls="pane-why" data-tab="why">Why</button>
@@ -127,8 +132,9 @@
         </section>
         <section>
           <h2>Buy order.</h2>
+          <p class="note">Damage and effective HP are the running gain after each step.</p>
           <div class="register scroll"><table>
-            <thead><tr><th class="num">Step</th><th>Node</th><th class="num">Column</th><th class="num">Row</th><th class="num">Cost</th><th class="num">Total</th><th class="num">Damage so far</th><th class="num">Eff. HP so far</th></tr></thead>
+            <thead><tr><th class="num">Step</th><th>Node</th><th class="num">Column, row</th><th class="num">Cost</th><th class="num">Total</th><th class="num">Damage</th><th class="num">Eff. HP</th></tr></thead>
             <tbody id="order"></tbody>
           </table></div>
         </section>
@@ -265,7 +271,6 @@
           <ul id="bullets"></ul>
         </section>
       </div>
-    </div>
   </div>
 </main>
 
@@ -333,7 +338,8 @@ const state = {
   owned: new Set((saved.owned || []).filter(i => P.NODES[i] && i !== P.START)),
   parts: saved.parts || null,  // how the loaded character's Attack was added up
   charStamp: saved.charStamp || 0,  // which load of the shared character this board last took its stats from
-  mode: saved.mode === 'plan' ? 'plan' : 'own',  // what a click on the board does
+  mode: ['rec', 'own', 'plan'].includes(saved.mode) && saved.view ? saved.mode : saved.mode === 'plan' ? 'plan' : 'rec',  // what the board shows: the recommendation, only what you own, or your own plan
+  view: 1,  // marks settings saved since the board got three views (before, 'own' meant what 'rec' means now)
   manual: new Set((saved.manual || []).filter(i => P.NODES[i] && i !== P.START)),  // the plan the player builds by hand: a whole board of its own, from the centre
   cmp: Object.assign({ a: 'mine', b: 'plan', other: { crystals: 60, goal: 'tank', target: 'open' }, player: { name: '', nodes: [] } }, saved.cmp),
 };
@@ -397,7 +403,7 @@ $('types').replaceChildren(...B.families.flatMap(([name, key, stats]) => {
     const nodes = P.NODES.filter(n => gives(n, stat)), total = nodes.reduce((a, n) => a + n.fx.find(e => e[0] === stat)[1], 0), pct = nodes[0].fx.find(e => e[0] === stat)[2] ? '%' : '';
     const b = el('button', 'type'), full = T('{name}: {nodes}, +{total} in total', { name: T(stat), nodes: nodesText(nodes.length), total: dec(total) + pct });
     b.type = 'button'; b.dataset.stat = stat; famVars(b, [stat]); b.setAttribute('aria-label', full); b.title = full;
-    b.append(el('span', 'chip', SHORT[stat]), el('span', 'num', nodes.length));
+    b.append(el('span', 'chip', SHORT[stat]), el('span', 'name', T(stat)), el('span', 'num', nodes.length));
     b.addEventListener('click', () => { if (!litTypes.delete(stat)) litTypes.add(stat); paintTypes(); });
     peeker(b, [stat], full);
     return b;
@@ -447,14 +453,14 @@ function render() {
     if (i === P.START) return;
     const n = P.NODES[i], owned = state.owned.has(i), s = step.get(i);
     // while planning by hand the board shows only that plan: owned nodes and the recommendation are hidden
-    const planning = state.mode === 'plan', mine = planning && state.manual.has(i);
-    tile.className = 'node' + (n.fx.length > 1 ? ' two' : '') + (planning ? (mine ? ' mine' : '') : owned ? ' owned' : s ? ' route' : '');
+    const planning = state.mode === 'plan', showRoute = state.mode === 'rec', mine = planning && state.manual.has(i);
+    tile.className = 'node' + (n.fx.length > 1 ? ' two' : '') + (planning ? (mine ? ' mine' : '') : owned ? ' owned' : s && showRoute ? ' route' : '');
     tile.textContent = tileLabel(n);
-    if (s && !planning && !owned) tile.appendChild(el('span', 'step', s));
+    if (s && showRoute && !owned) tile.appendChild(el('span', 'step', s));
     const pips = el('span', 'pips');  // cost: one tick per crystal
     for (let k = 0; k < n.cost; k++) pips.appendChild(el('i'));
     tile.appendChild(pips);
-    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (planning ? (mine ? T(', in my plan') : '') : owned ? T(', owned') : s ? T(', buy as step {s}', { s }) : ''));
+    tile.setAttribute('aria-label', `${describe(n)}, ${cr(n.cost)}` + (planning ? (mine ? T(', in my plan') : '') : owned ? T(', owned') : s && showRoute ? T(', buy as step {s}', { s }) : ''));
     tile.setAttribute('aria-pressed', planning ? mine : owned);
   });
   paintTypes();  // render() rebuilt the tiles' classes
@@ -486,7 +492,7 @@ function render() {
     const n = P.NODES[i]; run += n.cost; sofar.add(i);
     const s = sc(P.totals(sofar));
     return { cls: n.cost >= 3 ? 'major' : '', hover: () => tiles[i].focus({ preventScroll: true }),
-      cells: [k + 1, describe(n), n.x + 1, n.y + 1, n.cost, run, [signed(vs(s[0], d0)), 'num'], [signed(vs(s[1], e0)), 'num']] };
+      cells: [k + 1, describe(n), [`${n.x + 1}, ${n.y + 1}`, 'num'], n.cost, run, [signed(vs(s[0], d0)), 'num'], [signed(vs(s[1], e0)), 'num']] };
   }));
 
   // --- Why: one hit, three boards ---
@@ -597,7 +603,8 @@ document.querySelectorAll('input[name=mode]').forEach(r => {
   r.addEventListener('change', () => { state.mode = r.value; modeHint(); update(); });
 });
 // the line under the board says what a click does in the current mode
-const modeHint = () => hint(T(state.mode === 'plan' ? 'Click a node to add it to your plan, or to take it out.' : 'Click a node you already bought to mark it as owned.'));
+const MODE_HINTS = { rec: 'The recommended route, on top of what you own. Click a node you already bought to mark it as owned.', own: 'Only what you own. Click a node you already bought to mark it, or again to unmark it.', plan: 'Click a node to add it to your plan, or to take it out.' };
+const modeHint = () => hint(T(MODE_HINTS[state.mode]));
 modeHint();
 $('clear-mine').addEventListener('click', () => { state.manual = new Set(); update(); });
 $('copy-owned').addEventListener('click', () => { state.manual = new Set(state.owned); update(); });
