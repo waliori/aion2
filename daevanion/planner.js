@@ -314,17 +314,19 @@
     const spent = (set, owned) => [...set].reduce((a, i) => a + (owned && owned.has(i) ? 0 : NODES[i].cost), 0);
 
     // opt.must: skills (class boards) the route has to reach; they are worth more than any stat, so they go in first.
+    // opt.avoid: skills the route never opens, not even to pass through: it goes around their nodes.
     // opt.later: crystals you expect on top of these. The route is then the best board for the larger total, and the crystals
     // you have now are spent inside it, so nothing bought today ever has to be reset. `later` reports the price of that:
     // {chosen: the board at the larger total, seq: what to buy after today's nodes, loss: goal value given up today}.
     function plan(crystals, build, goal, owned, t, opt) {
       // points the goal has no use for are not wasted: they go to skill levels first, then to the other side of the goal
       const mix = GOALS[goal].map(v => v || 1e-5), must = new Set((opt && opt.must) || []), more = (opt && opt.later) || 0;
+      const avoid = new Set((opt && opt.avoid) || []), open = avoid.size ? new Set(NODES.map((n, i) => i).filter(i => !avoid.has(NODES[i].stat))) : undefined;
       owned = base(owned);
             const weigh = from => nodeWeights(build, mix, from, t).map((v, i) => v + (!NODES[i].isSkill ? 0 : must.has(NODES[i].stat) ? 10 : 1e-4));
       const w = weigh(owned);
       const obj = c => { const s = score(totals(c), build, t); let v = mix[0] * Math.log(s[0]) + mix[1] * Math.log(s[1]); for (const i of c) if (NODES[i].isSkill && must.has(NODES[i].stat)) v += 10; return v; };
-      const best = (budget, allowed) => {
+      const best = (budget, allowed = open) => {
         let chosen = solve(budget, w, owned, allowed);
         // second pass: value nodes at the midpoint of the first answer (halves the linearisation error)
         const seq = order(chosen, owned, w);
@@ -483,6 +485,8 @@
     const kp = K.plan(416, K.DEFAULT_BUILD, 'balanced', [], K.TARGETS[0], { must: ['Bolt'] });
     assert(K.spent(kp.chosen) <= 416 && K.connected(kp.chosen) && kp.seq.length === kp.chosen.size - 4 && new Set(kp.seq.map(i => K.NODES[i].sub)).size === 4);
     assert(K.NODES.filter(n => n.stat === 'Bolt').every(n => kp.chosen.has(K.NODES.indexOf(n))), 'a wanted skill is taken on every board');
+    const ap = K.plan(416, K.DEFAULT_BUILD, 'balanced', [], K.TARGETS[0], { avoid: ['Bolt'], later: 20 });
+    assert(K.connected(ap.chosen) && ![...ap.later.chosen].some(i => K.NODES[i].stat === 'Bolt') && [...ap.chosen].every(i => ap.later.chosen.has(i)), 'an avoided skill is on the route');
     console.log('selftest ok');
   }
 

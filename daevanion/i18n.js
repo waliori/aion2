@@ -426,6 +426,11 @@ Object.assign(FR, {
   '{n} skills chosen': '{n} compétences choisies', 'Reading {name}…': 'Lecture de {name}…',
 });
 
+Object.assign(FR, {
+  'Skills to reach or avoid.': 'Compétences à atteindre ou à éviter.',
+  'A skill level cannot be scored. Want: the route reaches the skill first and spends the rest on stats. Avoid: the route never opens it and goes around. The board changes when you press Done.': 'Un niveau de compétence ne se chiffre pas. Voulue : le chemin atteint la compétence d’abord et dépense le reste en stats. À éviter : le chemin ne l’ouvre jamais et la contourne. Le plateau change quand vous appuyez sur Terminé.',
+  'Want': 'Voulue', 'Avoid': 'À éviter', 'Cancel': 'Annuler', '{a} wanted, {b} avoided': '{a} voulues, {b} évitées',
+});
 const LANG = (() => {
   if (typeof localStorage === 'undefined') return 'en';
   try { const s = localStorage.getItem('ariel-lang'); if (s === 'fr' || s === 'en') return s; } catch (e) {}

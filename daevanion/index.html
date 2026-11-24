@@ -68,6 +68,7 @@
       <p id="char-note" class="note" aria-live="polite"></p>
       <p class="note"><span id="crystals-note">Your crystals: all of them, placed or free. The route spends them from an empty board.</span> <span id="later-help">Expected later: optional, the route is then planned for the larger total so nothing has to be reset.</span></p>
       <p id="target-note" class="note"></p>
+      <p id="skills-note" class="note" aria-live="polite"></p>
     </div>
   </section>
 
@@ -326,11 +327,10 @@
   <form method="dialog"><button class="btn btn--quiet">Close</button></form>
 </dialog>
 <dialog id="skills-dialog" aria-labelledby="skills-title">
-  <h2 id="skills-title">Skills to reach.</h2>
-  <p class="note">A skill level cannot be scored. Tick the skills you want: the route reaches them first and spends the rest on stats.</p>
-  <div id="skills" class="checks" role="group" aria-label="Skills"></div>
-  <p id="skills-note" class="note" aria-live="polite"></p>
-  <form method="dialog"><button class="btn">Done</button></form>
+  <h2 id="skills-title">Skills to reach or avoid.</h2>
+  <p class="note">A skill level cannot be scored. Want: the route reaches the skill first and spends the rest on stats. Avoid: the route never opens it and goes around. The board changes when you press Done.</p>
+  <div id="skills" class="checks skillrows" role="group" aria-label="Skills"></div>
+  <form method="dialog" class="actions"><button class="btn" value="done">Done</button> <button class="btn btn--quiet" value="">Cancel</button></form>
 </dialog>
 <dialog id="loading" aria-labelledby="loading-text">
   <span class="spinner" aria-hidden="true"></span>
@@ -424,6 +424,7 @@ const state = {
   sub: saved.sub >= 0 && saved.sub < P.STARTS.length ? saved.sub : 0,  // which of the four class boards is on screen
   later: Number.isInteger(saved.later) ? saved.later : 0,  // crystals still to come: the route is planned for crystals + later
   must: (saved.must || []).filter(s => P.skills.includes(s)),  // class boards: the skills the route has to reach
+  avoid: (saved.avoid || []).filter(s => P.skills.includes(s)),  // and the skills it never opens
   group: (saved.group || []).filter(g => g && g.name && Array.isArray(g.nodes)),  // players whose boards you follow: [{name, nodes}]
   goal: P.GOALS[saved.goal] ? saved.goal : 'dps',
   target: saved.target || P.TARGETS[0].id,
@@ -594,7 +595,7 @@ function render() {
   const b = state.build, t = targetById(state.target), mix = P.GOALS[state.goal], tName = T(t.name);
   const later = Math.min(state.later, MAX - state.crystals);  // never past the whole board, or the class boards' pool
   // the recommended route always starts from an empty board, with all your crystals: it is the board to aim for, not an extension of the one you have
-  const plan = P.plan(state.crystals, b, state.goal, [], t, { must: state.must, later }); lastPlan = plan.chosen;
+  const plan = P.plan(state.crystals, b, state.goal, [], t, { must: state.must, avoid: state.avoid, later }); lastPlan = plan.chosen;
   const laterSeq = plan.later ? plan.later.seq : [];
   const sNow = P.totals(state.owned), sAfter = P.totals(plan.chosen);
   const sc = s => P.score(s, b, t), vs = (a, base) => a / base - 1;
@@ -649,7 +650,7 @@ function render() {
     const wanted = P.NODES.map((n, i) => i).filter(i => P.NODES[i].isSkill && state.must.includes(P.NODES[i].stat)), got = wanted.filter(i => plan.chosen.has(i)).length;
     $('skills-note').textContent = !wanted.length ? '' : got === wanted.length ? T('All {n} wanted skill nodes are on the route.', { n: wanted.length }) : T('{a} of {n} wanted skill nodes fit in these crystals.', { a: got, n: wanted.length });
     $('skills-note').classList.toggle('warn', got < wanted.length);
-    $('skills-open').textContent = state.must.length ? T('{n} skills chosen', { n: state.must.length }) : T('Choose skills');
+    $('skills-open').textContent = state.must.length + state.avoid.length ? T('{a} wanted, {b} avoided', { a: state.must.length, b: state.avoid.length }) : T('Choose skills');
   }
   $('n-dmg').textContent = signed(d0 - 1); $('n-ehp').textContent = signed(e0 - 1); $('n-spent').textContent = ownedCost;
   $('now-figures').hidden = !state.owned.size;
@@ -720,9 +721,9 @@ function render() {
   const sets = { mine: P.base(state.owned), plan: plan.chosen, own: ownSet,
     player: P.base(state.cmp.player.nodes.filter(i => P.NODES[i])) };
   if (need('other')) {
-    const key = JSON.stringify([o, b, state.custom, state.must]);
+    const key = JSON.stringify([o, b, state.custom, state.must, state.avoid]);
     if (!targets().some(x => x.id === o.target)) o.target = P.TARGETS[0].id;
-    if (otherCache.key !== key) otherCache = { key, set: P.plan(o.crystals, b, o.goal, [], targetById(o.target), { must: state.must }).chosen };
+    if (otherCache.key !== key) otherCache = { key, set: P.plan(o.crystals, b, o.goal, [], targetById(o.target), { must: state.must, avoid: state.avoid }).chosen };
     sets.other = otherCache.set;
   }
   // a small board; the four class boards sit two by two on it
@@ -786,15 +787,31 @@ $('slider').addEventListener('input', e => { $('crystals').value = e.target.valu
 $('slider').addEventListener('change', e => setCrystals(e.target.value));
 $('later').value = state.later;
 $('later').addEventListener('change', e => { state.later = Math.max(0, Math.min(MAX, Math.round(+e.target.value) || 0)); e.target.value = state.later; update(); });
-// class boards: the skills to reach. A skill can sit on two nodes; ticking it asks for both.
+// class boards: the skills to reach or avoid. A skill can sit on several nodes; a choice covers them all.
+// The boxes are only a draft: the route is planned again when the dialog closes with Done, not on every tick.
 $('skills-card').hidden = !P.skills.length;
-$('skills').replaceChildren(...P.skills.map((sk, k) => {
-  const nodes = P.NODES.filter(n => n.isSkill && n.stat === sk), box = el('input'), l = el('label');
-  l.append(skillIcon(sk, 'sm'), ' ' + T(sk) + (nodes.length > 1 ? ' ×' + nodes.length : ''));
-  box.type = 'checkbox'; box.id = 'skill-' + k; box.checked = state.must.includes(sk); l.htmlFor = box.id;
-  box.addEventListener('change', () => { state.must = P.skills.filter(x => (x === sk ? box.checked : state.must.includes(x))); update(); });
-  const row = el('div'); row.append(box, l); return row;
+const skillBoxes = P.skills.map((sk, k) => ['must', 'avoid'].map(kind => {
+  const box = el('input'); box.type = 'checkbox'; box.id = kind + '-' + k; return box;
 }));
+$('skills').replaceChildren(...P.skills.map((sk, k) => {
+  const nodes = P.NODES.filter(n => n.isSkill && n.stat === sk), name = el('span'), row = el('div');
+  name.append(skillIcon(sk, 'sm'), ' ' + T(sk) + (nodes.length > 1 ? ' ×' + nodes.length : ''));
+  row.append(name, ...skillBoxes[k].flatMap((box, j) => {
+    const l = el('label'); l.htmlFor = box.id; l.textContent = T(j ? 'Avoid' : 'Want'); l.setAttribute('aria-label', T(j ? 'Avoid' : 'Want') + ' ' + T(sk));
+    box.addEventListener('change', () => { if (box.checked) skillBoxes[k][1 - j].checked = false; });  // one or the other
+    return [box, l];
+  }));
+  return row;
+}));
+$('skills-open').addEventListener('click', () => {
+  P.skills.forEach((sk, k) => { skillBoxes[k][0].checked = state.must.includes(sk); skillBoxes[k][1].checked = state.avoid.includes(sk); });
+  $('skills-dialog').returnValue = ''; $('skills-dialog').showModal();
+});
+$('skills-dialog').addEventListener('close', e => {
+  if (e.target.returnValue !== 'done') return;
+  state.must = P.skills.filter((sk, k) => skillBoxes[k][0].checked); state.avoid = P.skills.filter((sk, k) => skillBoxes[k][1].checked);
+  update();
+});
 document.querySelectorAll('input[name=goal]').forEach(r => {
   r.checked = r.value === state.goal;
   r.addEventListener('change', () => { state.goal = r.value; update(); });
@@ -859,7 +876,6 @@ function hideLoading() { if ($('loading').open) $('loading').close(); }
 $('loading').addEventListener('cancel', e => e.preventDefault());  // Escape does not dismiss it: it closes when the reading ends
 // a click on the dimmed page around a dialog closes it
 for (const id of ['char-dialog', 'skills-dialog']) $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).close(); });
-$('skills-open').addEventListener('click', () => $('skills-dialog').showModal());
 const openCharacter = () => { $('char-dialog').showModal(); $('char-name').focus(); };
 $('char-open').addEventListener('click', openCharacter);
 
