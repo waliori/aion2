@@ -32,7 +32,7 @@ body { color: var(--color-ink-2); font-size: var(--text-sm); }
 /* top bar */
 .topbar { border-bottom: var(--rule-hair) solid var(--color-ink); background: var(--color-paper-2); }
 .topbar .container { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-lg); min-height: 56px; padding-block: var(--space-xs); }
-.topbar .lang:last-child { margin-left: auto; }
+.topbar .theme { margin-left: auto; }
 
 /* controls: moulded 6px keys */
 .btn { display: inline-flex; align-items: center; min-height: var(--control); padding: 0 var(--space-md); border: var(--rule-hair) solid color-mix(in oklab, var(--color-accent) 78%, var(--color-ink)); border-radius: var(--radius-pill);
@@ -278,7 +278,7 @@ body.class-boards { --mini-cols: 30; --mini: 6px; }
 /* dialogs: the character lookup, the skills to reach, and the loader that covers the page while a character is read */
 dialog { width: 44rem; max-width: calc(100% - 2 * var(--gutter)); max-height: calc(100vh - 2 * var(--gutter)); padding: var(--space-lg); border: var(--rule-hair) solid var(--color-ink); border-radius: var(--radius-entry); background: var(--color-paper-2); color: var(--color-ink-2); }
 dialog[open] { display: grid; gap: var(--space-sm); }
-dialog::backdrop { background: color-mix(in oklab, var(--color-ink) 45%, transparent); backdrop-filter: blur(3px); }
+dialog::backdrop { background: var(--color-scrim); backdrop-filter: blur(3px); }
 dialog h2 { font-size: var(--text-lg); }
 dialog form[method="dialog"] { justify-self: end; }
 dialog .hits { max-height: 16rem; }

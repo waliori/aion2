@@ -8,11 +8,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600&family=Red+Hat+Text:wght@400;500&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="planner.css">
+<script id="theme-boot">
+// before the first paint: the saved theme, or the one the system asks for
+try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+</script>
 </head>
 <body>
 <header class="topbar"><div class="container">
   <h1 id="page-heading">Ariel board route planner.</h1>
   <div class="lang" role="group" aria-label="Board" id="board-switch"></div>
+  <div class="lang theme" role="group" aria-label="Theme">
+    <button type="button" data-theme-pick="light">Light</button>
+    <button type="button" data-theme-pick="dark">Dark</button>
+  </div>
   <div class="lang" role="group" aria-label="Language">
     <button type="button" data-lang="en" lang="en">English</button>
     <button type="button" data-lang="fr" lang="fr">Français</button>
@@ -387,6 +395,13 @@ const rows = (id, list) => $(id).replaceChildren(...list.map(({ cells, cls, hove
   return tr;
 }));
 
+const themeButtons = document.querySelectorAll('[data-theme-pick]');
+const showTheme = () => themeButtons.forEach(b => b.setAttribute('aria-pressed', b.dataset.themePick === document.documentElement.dataset.theme));
+themeButtons.forEach(b => b.addEventListener('click', () => {
+  document.documentElement.dataset.theme = b.dataset.themePick; showTheme();
+  try { localStorage.setItem('daevanion-theme', b.dataset.themePick); } catch (err) {}
+}));
+showTheme();
 // language: the static text of the page is translated in place, then the switch in the band
 translatePage(document);
 document.title = T(B.title);

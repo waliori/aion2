@@ -20,4 +20,23 @@
   --shadow-card: 0 1px 2px oklch(18% 0.006 60 / 0.08), 0 14px 28px -16px oklch(18% 0.006 60 / 0.28);
   --shadow-lift: 0 1px 1px oklch(18% 0.006 60 / 0.1), 0 2px 4px -1px oklch(18% 0.006 60 / 0.1), 0 24px 44px -20px oklch(18% 0.006 60 / 0.42);
   --tracking-display: -0.035em; --display-weight: 600;
+  --color-scrim: oklch(18% 0.006 60 / 0.45);
+}
+/* dark theme: set on <html> by the script in the head, from the saved choice or the system setting */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-error: oklch(72% 0.16 27); --color-success: oklch(74% 0.13 150);
+  --color-paper: oklch(19% 0.008 60); --color-paper-2: oklch(25% 0.01 60); --color-paper-3: oklch(30% 0.012 60);
+  --color-ink: oklch(94% 0.008 85); --color-ink-2: oklch(86% 0.01 85); --color-muted: oklch(72% 0.012 85); --color-rule: oklch(36% 0.012 60);
+  --color-accent-soft: oklch(36% 0.08 45); --color-focus: oklch(78% 0.16 45);
+  --color-green: oklch(72% 0.14 150); --color-green-soft: oklch(32% 0.05 150);
+  --color-contour: oklch(70% 0.07 58); --color-water: oklch(68% 0.07 232); --color-hedge: oklch(70% 0.1 150);
+  --color-grid: oklch(27% 0.01 60); --color-grid-strong: oklch(33% 0.012 60); --color-sheet: oklch(22.5% 0.009 60);
+  --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3), 0 14px 28px -16px oklch(0% 0 0 / 0.6);
+  --shadow-lift: 0 1px 1px oklch(0% 0 0 / 0.3), 0 2px 4px -1px oklch(0% 0 0 / 0.3), 0 24px 44px -20px oklch(0% 0 0 / 0.8);
+  --color-scrim: oklch(0% 0 0 / 0.6);
+  --fam-off-1: oklch(48% 0.13 12); --fam-off-2: oklch(41% 0.10 12); --fam-off-3: oklch(35% 0.07 12); --fam-off-4: oklch(30% 0.045 12);
+  --fam-def-1: oklch(47% 0.12 250); --fam-def-2: oklch(40% 0.09 250); --fam-def-3: oklch(34% 0.065 250); --fam-def-4: oklch(29% 0.04 250);
+  --fam-res-1: oklch(46% 0.08 195); --fam-res-2: oklch(34% 0.05 195);
+  --fam-skl-1: oklch(44% 0.11 305);
 }

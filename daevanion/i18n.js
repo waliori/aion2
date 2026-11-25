@@ -429,7 +429,7 @@ Object.assign(FR, {
 Object.assign(FR, {
   'Skills to reach or avoid.': 'Compétences à atteindre ou à éviter.',
   'A skill level cannot be scored. Want: the route reaches the skill first and spends the rest on stats. Avoid: the route never opens it and goes around. The board changes when you press Done.': 'Un niveau de compétence ne se chiffre pas. Voulue : le chemin atteint la compétence d’abord et dépense le reste en stats. À éviter : le chemin ne l’ouvre jamais et la contourne. Le plateau change quand vous appuyez sur Terminé.',
-  'Want': 'Voulue', 'Avoid': 'À éviter', 'Cancel': 'Annuler', '{a} wanted, {b} avoided': '{a} voulues, {b} évitées',
+  'Dark': 'Sombre', 'Light': 'Clair', 'Theme': 'Thème', 'Want': 'Voulue', 'Avoid': 'À éviter', 'Cancel': 'Annuler', '{a} wanted, {b} avoided': '{a} voulues, {b} évitées',
 });
 const LANG = (() => {
   if (typeof localStorage === 'undefined') return 'en';
