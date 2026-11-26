@@ -167,6 +167,9 @@
   const MODELS = { ariel: ARIEL, azphel: AZPHEL };
   const CLASS_BOARDS = ['nezekan', 'zikel', 'vaizel', 'triniel'], CLASSES = Object.keys(SK);
 
+  // The most board crystals a character can make or buy, less than the 232 the whole board costs. Ariel: 30 from each of six bosses' fragments.
+  // Azphel: 20 + 30 + 30 + 30 in the Abyss shop. Quests and events give a few more, so the page takes more than this; only "Up to the maximum" stops here.
+  const CAP = { ariel: 180, azphel: 110 };
   const POOL = 416;  // the four class boards are paid from one pool of Daevanion points
 
   // id 'class' is the four class boards as one board with four starts and one pool: a route is planned across all of them at once
@@ -176,7 +179,7 @@
     // sub: which of the boards a node is on. A skill node gives one level of the skill behind it; the two-crystal ones are passives.
     const NODES = parts.flatMap((part, sub) => ALL[part].nodes.map(n => Object.assign({}, n, n.skill == null ? null : { fx: [[SK[cls][part][n.skill], 1, false]], isSkill: true }, { sub, board: part })))
       .map(n => Object.assign(n, { stat: n.fx.length ? n.fx[0][0] : 'Start', kind: n.fx.map(e => e[0]).join(' + ') }));
-    const BOARD = id === 'class' ? { name: 'Class', nodes: NODES, total_cost: NODES.reduce((a, n) => a + n.cost, 0), pool: POOL } : ALL[id];
+    const BOARD = id === 'class' ? { name: 'Class', nodes: NODES, total_cost: NODES.reduce((a, n) => a + n.cost, 0), pool: POOL } : Object.assign({}, ALL[id], CAP[id] && { cap: CAP[id] });
     const skills = [...new Set(NODES.filter(n => n.isSkill).map(n => n.stat))];  // a skill sits on several nodes
     const N = NODES.length;
     const key = (x, y, sub) => (x + 100 * (sub || 0)) + ',' + y;  // boards never touch: each is 100 columns away from the last
@@ -407,7 +410,7 @@
     // fixed numbers so the checks below do not move when the defaults do
     const b = Object.assign({}, A.DEFAULT_BUILD, { attack: 5000, damage_boost_pct: 80, crit_hit: 600, accuracy: 700, crit_damage_boost_pct: 30, hp: 30000, tolerance_pct: 20, boss_tolerance_pct: 20, boss_defense: 0 });
     const all = NODES.map((_, i) => i);
-    assert(NODES.length === 153 && spent(all) === 232 && A.BOARD.total_cost === 232);
+    assert(NODES.length === 153 && spent(all) === 232 && A.BOARD.total_cost === 232 && A.BOARD.cap === 180 && make('azphel').BOARD.cap === 110);
     assert(connected(all), 'board is not connected under 4-neighbour adjacency');
     const full = totals(all);
     assert(full['PvE Attack'] === 72 && full['PvE Defense'] === 720 && full['PvE Damage Boost'] === 6 && full['Critical Hit'] === 40, 'Ariel totals');

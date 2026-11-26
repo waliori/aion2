@@ -81,7 +81,7 @@ The defaults are a placeholder mid-game character, not yours. The ones listed as
 
 ### The boards
 
-Both are 15×15 grids with 152 stat nodes and a centre start, 232 crystals for everything, identical for every class. You can only buy a node next to one you own (up/down/left/right). The data comes from the official API.
+Both are 15×15 grids with 152 stat nodes and a centre start, 232 crystals for everything, identical for every class. A character can make or buy fewer than that: 180 on Ariel (30 from each of six bosses' fragments) and 110 on Azphel (20 + 30 + 30 + 30 in the Abyss shop), plus a few from quests and events. You can only buy a node next to one you own (up/down/left/right). The data comes from the official API.
 
 | Cost | Ariel (PvE) | Azphel (PvP) |
 |---|---|---|
@@ -148,7 +148,7 @@ Nezekan, Zikel and Vaizel have 88 nodes each, Triniel 116: general stats (Attack
 
 The exact check can take close to 1 GB of memory, so it starts by itself only on a computer; on a phone the page keeps the quick route and offers a "Check anyway" button.
 
-"Up to the full board" does the same for every crystal the board can take, so one order can be followed from now on; it replaces the number typed under "Expected later". Under the encounter or opponent, the page lists the numbers the plan is made against (the boss's or the player's stats).
+"Up to the maximum" does the same for the most crystals you can have (180 on Ariel, 110 on Azphel, the pool of 416 on the class boards), so one order can be followed from now on; it replaces the number typed under "Expected later". Under the encounter or opponent, the page lists the numbers the plan is made against (the boss's or the player's stats).
 
 "More crystals expected later" plans the route for the larger total and spends today's crystals inside it, so nothing bought now has to be reset later. The page says what that costs today against the best board for today's crystals alone, and the buy order continues, greyed, with what comes later.
 

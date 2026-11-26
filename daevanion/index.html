@@ -74,7 +74,7 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
     <div class="field">
       <label for="later">Expected later</label>
       <input id="later" name="later" type="number" min="0" value="0" inputmode="numeric" aria-describedby="later-help">
-      <label class="tick"><input id="later-all" type="checkbox"> Up to the full board</label>
+      <label class="tick"><input id="later-all" type="checkbox"> Up to the maximum</label><span id="later-cap"></span>
     </div>
     <fieldset class="field">
       <legend>Goal</legend>
@@ -94,7 +94,7 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
     </div>
     <div class="help">
       <p id="char-note" class="note" aria-live="polite"></p>
-      <p class="note"><span id="crystals-note">Your crystals: all of them, placed or free. The route spends them from an empty board.</span> <span id="later-help">Expected later: optional, the route is then planned for the larger total so nothing has to be reset. Tick “Up to the full board” to plan once for every crystal the board can take and follow that one order from now on.</span></p>
+      <p class="note"><span id="crystals-note">Your crystals: all of them, placed or free. The route spends them from an empty board.</span> <span id="later-help">Expected later: optional, the route is then planned for the larger total so nothing has to be reset. Tick “Up to the maximum” to plan once for the most crystals you can have and follow that one order from now on.</span></p>
       <p id="target-note" class="note"></p>
       <dl id="target-stats" class="tstats"></dl>
       <p id="skills-note" class="note" aria-live="polite"></p>
@@ -387,7 +387,8 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
 <script>
 const P = Planner, C = Character, $ = id => document.getElementById(id);
 const B = UI[P.id];  // everything board-specific: labels, families, fields, explanations (ui.js)
-const MAX = P.BOARD.pool || P.BOARD.total_cost;  // the most crystals you can have: the whole board, or the pool the four class boards share
+const MAX = P.BOARD.pool || P.BOARD.total_cost;  // the most crystals the page takes: the whole board, or the pool the four class boards share
+const CAP = P.BOARD.cap || MAX;  // what "Up to the maximum" plans for: the crystals the game lets a character make or buy
 const STORE = B.store + (P.cls ? '-' + P.cls : '');  // a class board keeps its own settings per class
 const CLASS_NAMES = { gladiator: 'Gladiator', templar: 'Templar', assassin: 'Assassin', ranger: 'Ranger', sorcerer: 'Sorcerer', spiritmaster: 'Spiritmaster', cleric: 'Cleric', chanter: 'Chanter' };
 const SHORT = Object.assign({}, LANG === 'fr' ? B.shortFr : B.short);
@@ -442,6 +443,7 @@ document.title = T(B.title) + ', AION 2 Daevanion';
 { const c = document.querySelector('link[rel=canonical]'), q = new URLSearchParams(location.search).get('board'); if (q && q !== 'ariel') c.href += '?board=' + (P.id === 'class' ? 'class' : P.id); }
 document.body.classList.toggle('class-boards', P.STARTS.length > 1);
 for (const id of ['crystals', 'slider', 'o-crystals', 'later']) $(id).max = MAX;
+$('later-cap').textContent = ' (' + CAP + ')';
 for (const [id, text] of [['page-heading', B.heading], ['tagline', B.tagline], ['states-head', B.statesHead], ['worth-note', B.worthNote], ['enc-title', B.encTitle], ['enc-note', B.encNote],
   ['enc-head', B.encHead], ['miss-head', B.missHead], ['compare-note', B.compareNote], ['stats-note', B.statsNote], ['custom-title', B.customTitle], ['custom-note', B.customNote],
   ['formula', B.formula], ['calc-foot', B.calcNote]]) $(id).textContent = T(text);
@@ -471,7 +473,7 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) {}
 if (saved.build && saved.build.boss_defense === 0) delete saved.build.boss_defense;  // 0 was the old default, before a measurement existed
 const state = {
-  crystals: Number.isInteger(saved.crystals) ? saved.crystals : P.BOARD.pool || 30,  // all your crystals; the class boards start at their full pool
+  crystals: Number.isInteger(saved.crystals) ? Math.min(MAX, saved.crystals) : P.BOARD.pool || 30,  // all your crystals; the class boards start at their full pool
   sub: saved.sub >= 0 && saved.sub < P.STARTS.length ? saved.sub : 0,  // which of the four class boards is on screen
   later: Number.isInteger(saved.later) ? saved.later : 0, laterAll: !!saved.laterAll,  // crystals still to come: the route is planned for crystals + later
   must: (saved.must || []).filter(s => P.skills.includes(s)),  // class boards: the skills the route has to reach
@@ -692,7 +694,7 @@ function startProof(key, quick, job, forced) {
 }
 function render() {
   const b = state.build, t = targetById(state.target), mix = P.GOALS[state.goal], tName = T(t.name);
-  const later = state.laterAll ? MAX - state.crystals : Math.min(state.later, MAX - state.crystals);  // never past the whole board, or the class boards' pool
+  const later = state.laterAll ? Math.max(0, CAP - state.crystals) : Math.min(state.later, MAX - state.crystals);  // never past the whole board, or the class boards' pool
   // the recommended route always starts from an empty board, with all your crystals: it is the board to aim for, not an extension of the one you have
   // the quick search answers at once; the exact check (exact.js, in a worker) then looks at every possible board and replaces it
   const key = JSON.stringify([P.id, P.cls, state.crystals, later, b, state.goal, t, state.must, state.avoid]);
