@@ -26,7 +26,7 @@
       block_pct_per_point: 0.1,   // chance to be blocked per Accuracy point short (AION 2 Timers: 10% per 100; Aion 2 Maps: ~6.7%)
       block_loss_pct: 50,         // damage lost on a blocked hit (reports range 20 to 50)
       boss_tolerance_pct: 20,     // boss's Damage Tolerance where the encounter has no measured one (KR community reference value)
-      boss_defense: 0,            // boss's Defense: takes a flat 0.1 x Defense off every hit. Never measured, so 0
+      boss_defense: 6400,         // boss's Defense: takes a flat 0.1 x Defense off every hit. One measurement: about 6,400 on Nemon, Transcendence 4 (DCInside, KR, March 2026)
       boss_crit_dmg_resist_pct: 25,
       boss_hit: 4000,             // typical boss hit before your Defense
       boss_damage_boost_pct: 50,  // boss's own Damage Boost
@@ -39,7 +39,7 @@
     // over: boss numbers for this encounter that replace the boss_* guesses in the build (measured Damage Tolerance; the custom encounter).
     TARGETS: [
       { id: 'open', name: 'Open world and normal dungeons', acc: 0, crit: 0, note: 'Bosses here do not block you. No Critical Hit figure is measured, so crit chance is estimated from your rating.' },
-      { id: 't4', name: 'Transcendence tier 4', acc: 1075, crit: 1420, over: { boss_tolerance_pct: 68 }, note: 'Crit cap at about 1,420 Critical Hit. Parries stop between 800 and 1,075 Accuracy depending on the boss; the plan uses 1,075. Boss Damage Tolerance measured at 68%.' },
+      { id: 't4', name: 'Transcendence tier 4', acc: 1075, crit: 1420, over: { boss_tolerance_pct: 68 }, note: 'Crit cap at about 1,420 Critical Hit. Parries stop between 800 and 1,075 Accuracy depending on the boss; the plan uses 1,075. Boss Damage Tolerance: one measurement says 68%, another 44%; the plan uses 68%.' },
       { id: 'hardmid', name: 'Conquest hard, mid-bosses', acc: 1000, crit: 1415, over: { boss_tolerance_pct: 62 }, note: 'Crit cap at 1,405 to 1,425 Critical Hit. Parries stop between 800 and 1,000 Accuracy; the plan uses 1,000. Boss Damage Tolerance measured at 58 to 67%; the plan uses 62%.' },
       { id: 'hardfinal', name: 'Conquest hard, final bosses', acc: 1075, crit: 1540, over: { boss_tolerance_pct: 62 }, note: 'Crit cap at 1,525 to 1,555 Critical Hit. Parries stop at about 925 Accuracy, 1,075 on Transcendent Bakarma; the plan uses 1,075. Boss Damage Tolerance measured at 58 to 67%; the plan uses 62%.' },
       { id: 'fire', name: 'Fire Temple hard', acc: 1050, crit: 1600, note: 'Crit cap at 1,590 to 1,610 Critical Hit. Parries stop between 800 and 1,050 Accuracy; the plan uses 1,050.' },
@@ -405,7 +405,7 @@
     // ---- Ariel
     const A = make('ariel'), { NODES, START, POS, ADJ, totals, score, hit, plan, order, spent, pathTo, baselines, nodeTypes, connected } = A;
     // fixed numbers so the checks below do not move when the defaults do
-    const b = Object.assign({}, A.DEFAULT_BUILD, { attack: 5000, damage_boost_pct: 80, crit_hit: 600, accuracy: 700, crit_damage_boost_pct: 30, hp: 30000, tolerance_pct: 20, boss_tolerance_pct: 20 });
+    const b = Object.assign({}, A.DEFAULT_BUILD, { attack: 5000, damage_boost_pct: 80, crit_hit: 600, accuracy: 700, crit_damage_boost_pct: 30, hp: 30000, tolerance_pct: 20, boss_tolerance_pct: 20, boss_defense: 0 });
     const all = NODES.map((_, i) => i);
     assert(NODES.length === 153 && spent(all) === 232 && A.BOARD.total_cost === 232);
     assert(connected(all), 'board is not connected under 4-neighbour adjacency');

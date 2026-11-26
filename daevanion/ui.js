@@ -48,7 +48,7 @@ const UI = {
       ['block_loss_pct', L('Damage lost on a blocked hit %')],
       ['boss_crit_dmg_resist_pct', L('Boss crit damage resist %')],
       ['boss_tolerance_pct', L('Boss Damage Tolerance %, where none is measured')],
-      ['boss_defense', L('Boss Defense')],
+      ['boss_defense', L('Boss Defense (one measurement: 6,400)')],
       ['boss_hit', L('Boss hit size before your Defense')],
       ['boss_damage_boost_pct', L('Boss Damage Boost %')],
       ['evasion_pct_per_point', L('Damage avoided % per Evasion point (0 = ignore)')],

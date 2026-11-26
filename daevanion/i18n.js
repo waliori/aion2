@@ -144,6 +144,7 @@ const FR = {
   'Blocked chance % per Accuracy point short': 'Chance d’être bloqué % par point de Précision manquant',
   'Damage lost on a blocked hit %': 'Dégâts perdus sur un coup bloqué %',
   'Boss crit damage resist %': 'Résistance du boss aux dégâts critiques %',
+  'Boss Defense (one measurement: 6,400)': 'DÉF du boss (une seule mesure : 6 400)',
   'Boss Damage Tolerance %': 'Tolérance aux DGT du boss %', 'Boss hit size before your Defense': 'Coup du boss avant votre DÉF',
   'Boss Damage Boost %': 'Boost de DGT du boss %',
   'Damage avoided % per Evasion point (0 = ignore)': 'Dégâts évités % par point d’Esquive (0 = ignorer)',
@@ -247,8 +248,8 @@ Object.assign(FR, {
   'All Damage Boost types add into one bucket, and the boss’s Damage Tolerance comes off it. Against a boss with 68% Tolerance and 25% boost of your own, the bucket is only 57%, so +1.5% is 1.5 ÷ 57 = +2.6% damage. The more Tolerance the boss has, the more each Damage Boost node is worth.':
     'Tous les Boosts de DGT s’additionnent dans un seul multiplicateur, dont on retire la Tolérance aux DGT du boss. Contre un boss à 68 % de Tolérance, avec 25 % de boost à vous, il ne reste que 57 % : +1,5 % donne alors 1,5 ÷ 57 = +2,6 % de dégâts. Plus le boss a de Tolérance, plus chaque nœud de Boost de DGT rapporte.',
   'The green nodes give two stats at once, and both are counted.': 'Les nœuds verts donnent deux stats à la fois, et les deux sont comptées.',
-  'Crit cap at about 1,420 Critical Hit. Parries stop between 800 and 1,075 Accuracy depending on the boss; the plan uses 1,075. Boss Damage Tolerance measured at 68%.':
-    'Plafond de critique vers 1 420 de CRIT. Les parades cessent entre 800 et 1 075 de Précision selon le boss ; le plan utilise 1 075. Tolérance aux DGT du boss mesurée à 68 %.',
+  'Crit cap at about 1,420 Critical Hit. Parries stop between 800 and 1,075 Accuracy depending on the boss; the plan uses 1,075. Boss Damage Tolerance: one measurement says 68%, another 44%; the plan uses 68%.':
+    'Plafond de critique vers 1 420 de CRIT. Les parades cessent entre 800 et 1 075 de Précision selon le boss ; le plan utilise 1 075. Tolérance aux DGT du boss : une mesure donne 68 %, une autre 44 % ; le plan utilise 68 %.',
   'Crit cap at 1,405 to 1,425 Critical Hit. Parries stop between 800 and 1,000 Accuracy; the plan uses 1,000. Boss Damage Tolerance measured at 58 to 67%; the plan uses 62%.':
     'Plafond de critique entre 1 405 et 1 425 de CRIT. Les parades cessent entre 800 et 1 000 de Précision ; le plan utilise 1 000. Tolérance aux DGT du boss mesurée entre 58 et 67 % ; le plan utilise 62 %.',
   'Crit cap at 1,525 to 1,555 Critical Hit. Parries stop at about 925 Accuracy, 1,075 on Transcendent Bakarma; the plan uses 1,075. Boss Damage Tolerance measured at 58 to 67%; the plan uses 62%.':

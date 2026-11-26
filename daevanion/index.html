@@ -469,6 +469,7 @@ document.querySelectorAll('[data-lang]').forEach(b => {
 // saved between visits; the page works without it
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) {}
+if (saved.build && saved.build.boss_defense === 0) delete saved.build.boss_defense;  // 0 was the old default, before a measurement existed
 const state = {
   crystals: Number.isInteger(saved.crystals) ? saved.crystals : P.BOARD.pool || 30,  // all your crystals; the class boards start at their full pool
   sub: saved.sub >= 0 && saved.sub < P.STARTS.length ? saved.sub : 0,  // which of the four class boards is on screen
