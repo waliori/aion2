@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ariel board route planner</title>
 <meta name="description" content="Plan the best route through the AION 2 Daevanion boards, Ariel for PvE and Azphel for PvP, see the numbers behind it, and compare boards side by side.">
+<link rel="canonical" href="https://daevanion.walior.it/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#1b1917">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Daevanion planner">
+<meta property="og:url" content="https://daevanion.walior.it/">
+<meta property="og:title" content="AION 2 Daevanion board route planner">
+<meta property="og:description" content="The best route through the Ariel, Azphel and class boards for the crystals you have, checked against every possible board.">
+<meta property="og:image" content="https://daevanion.walior.it/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Ariel board with a planned route marked in orange.">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json" id="ld">{"@context":"https://schema.org","@type":"WebApplication","name":"Daevanion planner","url":"https://daevanion.walior.it/","description":"Plan the best route through the AION 2 Daevanion boards, Ariel for PvE and Azphel for PvP, see the numbers behind it, and compare boards side by side.","applicationCategory":"GameApplication","operatingSystem":"Any","inLanguage":["en","fr"],"isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"about":{"@type":"VideoGame","name":"AION 2"}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600&family=Red+Hat+Text:wght@400;500&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="planner.css">
@@ -205,6 +224,18 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
             <thead><tr><th id="enc-head"></th><th class="num">Crit after</th><th class="num" id="miss-head"></th><th class="num">Hit now</th><th class="num">Hit after</th><th>Gain</th><th class="num"></th></tr></thead>
             <tbody id="enc"></tbody>
           </table></div>
+        </section>
+        <section class="how" id="method">
+          <h2>How the route is found.</h2>
+          <p class="note">The goal is a single number. The formula under My stats gives the damage you deal and the hits you survive for any board. Damage maximises ln(damage), Survival maximises ln(effective HP), and Both maximises half of each.</p>
+          <p class="note">The rules make it hard. Every node bought must touch one you already hold, back to the start, and the total cost must fit your crystals. Mathematicians call this a budgeted maximum-weight connected subgraph. No fast method is known that always solves it, so the page works in two stages.</p>
+          <ol>
+            <li>Quick search. Each node gets the gain it brings by itself. On a random spanning tree of the board, a knapsack over the tree finds the best connected board exactly. This is repeated on 300 to 1,500 trees, then once more with the gains measured again at mid-route. You see this route at once.</li>
+            <li>Exact sweep. The board is read cell by cell. For every way the cells on the reading line can be taken and linked to each other, and for every number of crystals spent, only the best value is kept. A board is dropped only when a bound proves it cannot win.</li>
+            <li>The real formula. Stats multiply, so the gains of two nodes do not simply add. The curve of each stat is capped by a straight line. The sweep on those lines gives a ceiling that no board can pass, and the best real board found so far is the floor.</li>
+            <li>Closing the gap. The lines are tightened and the ranges of stat totals are cut in two, until ceiling and floor meet. The page then says “Proven best”. If a minute passes first, it gives the margin that is left.</li>
+          </ol>
+          <p class="note">On the class boards the four boards are swept one after the other and the shared pool is split between them exactly. The buy order is not part of the proof: it takes the best gain per crystal first, always next to what you hold.</p>
         </section>
       </div>
 
@@ -407,7 +438,8 @@ themeButtons.forEach(b => b.addEventListener('click', () => {
 showTheme();
 // language: the static text of the page is translated in place, then the switch in the band
 translatePage(document);
-document.title = T(B.title);
+document.title = T(B.title) + ', AION 2 Daevanion';
+{ const c = document.querySelector('link[rel=canonical]'), q = new URLSearchParams(location.search).get('board'); if (q && q !== 'ariel') c.href += '?board=' + (P.id === 'class' ? 'class' : P.id); }
 document.body.classList.toggle('class-boards', P.STARTS.length > 1);
 for (const id of ['crystals', 'slider', 'o-crystals', 'later']) $(id).max = MAX;
 for (const [id, text] of [['page-heading', B.heading], ['tagline', B.tagline], ['states-head', B.statesHead], ['worth-note', B.worthNote], ['enc-title', B.encTitle], ['enc-note', B.encNote],

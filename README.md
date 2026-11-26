@@ -177,3 +177,7 @@ So a second solver (`exact.js`) runs in the background and replaces the quick ro
 The page then says either "Proven best" (floor and ceiling meet, to a millionth) or "no board can beat this route by more than X%". With the default stats, Damage on Ariel and Azphel is proven best in 2 to 60 seconds; Survival, Both and the class boards usually end within 0.05%. The check stops after a minute or 40 sweeps and reports the margin it reached. `node daevanion/exact.js` checks the sweep against a plain enumeration of every connected board at small budgets.
 
 What "proven" covers: the best board for the formulas and the stats on the page. It does not make the formulas themselves any more certain.
+
+## Search and link previews
+
+The page carries a canonical link per board, Open Graph and Twitter card tags, a JSON-LD description, `robots.txt`, `sitemap.xml`, a web manifest, an SVG icon with PNG copies, and `og.png` (1200 x 630), a capture of the real Ariel board with a planned route. None of them names a person. To redo `og.png` after a visual change, capture the board again at that size.
