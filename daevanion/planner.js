@@ -208,6 +208,8 @@
     // On a spanning tree this is an exact knapsack (take a node, or skip its whole subtree).
     // The board is a grid, not a tree, so we try many random spanning trees; each new tree
     // keeps the current answer intact, so the answer only ever improves.
+    // This is the quick answer the page shows at once; exact.js then proves or replaces it (it misses by up to 0.3% of the gain
+    // between 90 and 150 crystals).
     // ponytail: randomised search, not a proof of optimality. The self-test brute-forces small
     // budgets, and at these settings it matched an exact MILP in 240/240 runs up to 60 crystals
     // (at 240 rounds / restart every 40 it missed ~20%, by at most 2% of the gain).
@@ -338,6 +340,16 @@
       return { chosen, seq, later: { chosen: final, seq: order(final, chosen, w), loss: Math.max(0, obj(best(crystals)) - obj(chosen)) } };
     }
 
+    // The same shape plan() returns, for boards found by the exact solver (exact.js): chosen today, final at the later total.
+    function asPlan(chosen, final, build, goal, t, opt) {
+      const mix = GOALS[goal].map(v => v || 1e-5), must = new Set((opt && opt.must) || []), none = base([]);
+      const w = nodeWeights(build, mix, none, t).map((v, i) => v + (!NODES[i].isSkill ? 0 : must.has(NODES[i].stat) ? 10 : 1e-4));
+      chosen = base(chosen);
+      const out = { chosen, seq: order(chosen, none, w) };
+      if (final) out.later = { chosen: base(final), seq: order(base(final), chosen, w), loss: (opt && opt.loss) || 0 };
+      return out;
+    }
+
     // Two ways a player might spend the same crystals without a planner, to compare against plan().
     function baselines(crystals, build, goal, owned, t) {
       const mix = GOALS[goal], start = base(owned);
@@ -385,7 +397,7 @@
       return [...rows.values()].map(r => ({ ...r, costs: [...r.costs].sort() }));
     }
 
-    return { id, cls, skills, skillMeta: (cls && META[cls]) || {}, BOARD, NODES, START, STARTS, base, POS, ADJ, DEFAULT_BUILD, GOALS, TARGETS, model: M, totals, hit, score, solve, plan, order, spent, pathTo, baselines, nodeTypes, connected };
+    return { id, cls, skills, skillMeta: (cls && META[cls]) || {}, BOARD, NODES, START, STARTS, base, POS, ADJ, DEFAULT_BUILD, GOALS, TARGETS, model: M, totals, hit, score, solve, plan, asPlan, order, spent, pathTo, baselines, nodeTypes, connected };
   }
 
   function selftest() {

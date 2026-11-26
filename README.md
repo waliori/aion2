@@ -146,6 +146,10 @@ Nezekan, Zikel and Vaizel have 88 nodes each, Triniel 116: general stats (Attack
 
 ### Planning for crystals to come
 
+The exact check can take close to 1 GB of memory, so it starts by itself only on a computer; on a phone the page keeps the quick route and offers a "Check anyway" button.
+
+"Up to the full board" does the same for every crystal the board can take, so one order can be followed from now on; it replaces the number typed under "Expected later". Under the encounter or opponent, the page lists the numbers the plan is made against (the boss's or the player's stats).
+
 "More crystals expected later" plans the route for the larger total and spends today's crystals inside it, so nothing bought now has to be reset later. The page says what that costs today against the best board for today's crystals alone, and the buy order continues, greyed, with what comes later.
 
 ### The route starts from an empty board
@@ -160,4 +164,16 @@ The official API has a ranking endpoint, but on Global it returns nothing, so th
 
 Each node gets a value from the formulas above (its gain on top of an empty board). Picking the best connected group of nodes under a crystal budget is a knapsack on a graph. On a tree that can be solved exactly, so the planner solves it on 1500 random spanning trees of the board and keeps the best answer (about 330 for the four class boards together, which are 2.5 times the nodes and twice the budget; there the answer came within 0.5% of a ten times longer search). It then repeats once with node values taken halfway along the route, so diminishing returns and the crit cap are priced in.
 
-This is a search, not a proof. The self-test checks it against brute force at 10 crystals, and it matched an exact (slow) integer-programming solve in 240 of 240 runs for budgets of 15 to 60 crystals. Above 60 it is unverified.
+That quick search answers at once, but it is a search, not a proof: between about 90 and 150 crystals it misses the best board by up to 0.3 points of damage.
+
+### The exact check
+
+So a second solver (`exact.js`) runs in the background and replaces the quick route with a proven one.
+
+- **The sweep.** For node values that simply add up, the best connected board is found exactly. The grid is read cell by cell; for every shape the sweep line can have (which of its cells are taken, and which of those are already joined to each other and to the start) it keeps the best value for every number of crystals spent. Boards are only dropped when a plain upper bound shows they cannot beat one already known. The four class boards are swept one by one and the pool is split between them exactly.
+- **The real formula.** Attack, crit and boosts multiply, so node values do not simply add up. The objective is a sum of curves, one per pile of stats that act together (found by trying every pair of reachable totals). Each curve is capped from above by a straight line, which gives node values that do add up; the sweep's answer for those is a ceiling no board can pass. The best real board found is the floor.
+- **Closing the gap.** Where a line cannot touch its curve (a curve that bends upward, like Damage Tolerance, or two stats that multiply, like Critical Hit and Critical Damage Boost), the totals are split into two ranges with a tighter line each, and the slopes are moved when a cap is flat where the real curve is not.
+
+The page then says either "Proven best" (floor and ceiling meet, to a millionth) or "no board can beat this route by more than X%". With the default stats, Damage on Ariel and Azphel is proven best in 2 to 60 seconds; Survival, Both and the class boards usually end within 0.05%. The check stops after a minute or 40 sweeps and reports the margin it reached. `node daevanion/exact.js` checks the sweep against a plain enumeration of every connected board at small budgets.
+
+What "proven" covers: the best board for the formulas and the stats on the page. It does not make the formulas themselves any more certain.

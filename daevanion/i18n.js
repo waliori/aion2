@@ -418,7 +418,9 @@ Object.assign(FR, {
   'Highlight': 'Surligner', 'Highlight nodes': 'Surligner des nœuds', 'All of them': 'Tous', 'Clear': 'Effacer',
   'Character': 'Personnage', 'Load my character': 'Charger mon personnage', 'Change': 'Changer', 'Expected later': 'Attendus plus tard', 'Choose skills': 'Choisir les compétences',
   'Your crystals: all of them, placed or free. The route spends them from an empty board.': 'Vos cristaux : tous, placés ou libres. Le chemin les dépense à partir d’un plateau vide.',
-  'Expected later: optional, the route is then planned for the larger total so nothing has to be reset.': 'Attendus plus tard : facultatif, le chemin est alors prévu pour le total final et rien n’aura à être réaffecté.',
+  'Expected later: optional, the route is then planned for the larger total so nothing has to be reset. Tick “Up to the full board” to plan once for every crystal the board can take and follow that one order from now on.': 'Attendus plus tard : facultatif, le chemin est alors prévu pour le total final et rien n’aura à être réaffecté. Cochez « Jusqu’au plateau complet » pour planifier une seule fois pour tous les cristaux que le plateau peut recevoir, et suivre ensuite ce même ordre.',
+  'Up to the full board': 'Jusqu’au plateau complet',
+  'Check anyway': 'Vérifier quand même', 'This route comes from the quick search. The exact check needs a lot of memory and may not run on this device.': 'Ce chemin vient de la recherche rapide. La vérification exacte demande beaucoup de mémoire et peut ne pas fonctionner sur cet appareil.',
   'Find a kind of node on the board': 'Trouver un type de nœud sur le plateau',
   'Load my character.': 'Charger mon personnage.',
   'Read from the official AION 2 site: your stats, and the nodes you own on every board.': 'Lu sur le site officiel d’AION 2 : vos stats, et les nœuds que vous possédez sur chaque plateau.',
@@ -430,6 +432,16 @@ Object.assign(FR, {
   'Skills to reach or avoid.': 'Compétences à atteindre ou à éviter.',
   'A skill level cannot be scored. Want: the route reaches the skill first and spends the rest on stats. Avoid: the route never opens it and goes around. The board changes when you press Done.': 'Un niveau de compétence ne se chiffre pas. Voulue : le chemin atteint la compétence d’abord et dépense le reste en stats. À éviter : le chemin ne l’ouvre jamais et la contourne. Le plateau change quand vous appuyez sur Terminé.',
   'Dark': 'Sombre', 'Light': 'Clair', 'Theme': 'Thème', 'Want': 'Voulue', 'Avoid': 'À éviter', 'Cancel': 'Annuler', '{a} wanted, {b} avoided': '{a} voulues, {b} évitées',
+});
+Object.assign(FR, {
+  'Checking every possible board…': 'Vérification de tous les plateaux possibles…',
+  '{name}, row {a} of {b}.': '{name}, ligne {a} sur {b}.', 'Row {a} of {b}.': 'Ligne {a} sur {b}.',
+  'So far: nothing can beat this route by more than {x}.': 'Pour l’instant : rien ne peut battre ce chemin de plus de {x}.',
+  'This board could not be checked on this device. The route shown is the quick search’s.': 'Ce plateau n’a pas pu être vérifié sur cet appareil. Le chemin affiché est celui de la recherche rapide.',
+  'The check found a better route than the quick search: {x} more on your goal.': 'La vérification a trouvé un meilleur chemin que la recherche rapide : {x} de plus sur votre objectif.',
+  'This board is too large to check in full. The route shown is the best one found.': 'Ce plateau est trop grand pour être vérifié en entier. Le chemin affiché est le meilleur trouvé.',
+  'Proven best: no board does better with these settings.': 'Prouvé optimal : aucun plateau ne fait mieux avec ces réglages.',
+  'Proven: no board can beat this route by more than {x}.': 'Prouvé : aucun plateau ne peut battre ce chemin de plus de {x}.',
 });
 const LANG = (() => {
   if (typeof localStorage === 'undefined') return 'en';

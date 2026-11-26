@@ -55,6 +55,7 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
     <div class="field">
       <label for="later">Expected later</label>
       <input id="later" name="later" type="number" min="0" value="0" inputmode="numeric" aria-describedby="later-help">
+      <label class="tick"><input id="later-all" type="checkbox"> Up to the full board</label>
     </div>
     <fieldset class="field">
       <legend>Goal</legend>
@@ -74,8 +75,9 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
     </div>
     <div class="help">
       <p id="char-note" class="note" aria-live="polite"></p>
-      <p class="note"><span id="crystals-note">Your crystals: all of them, placed or free. The route spends them from an empty board.</span> <span id="later-help">Expected later: optional, the route is then planned for the larger total so nothing has to be reset.</span></p>
+      <p class="note"><span id="crystals-note">Your crystals: all of them, placed or free. The route spends them from an empty board.</span> <span id="later-help">Expected later: optional, the route is then planned for the larger total so nothing has to be reset. Tick “Up to the full board” to plan once for every crystal the board can take and follow that one order from now on.</span></p>
       <p id="target-note" class="note"></p>
+      <dl id="target-stats" class="tstats"></dl>
       <p id="skills-note" class="note" aria-live="polite"></p>
     </div>
   </section>
@@ -99,6 +101,7 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
           <button class="btn btn--quiet" id="types-clear" type="button" hidden>Clear</button>
         </div>
       </div>
+      <p id="proof" class="note proof" aria-live="polite" hidden><progress id="proof-bar" max="1" value="0"></progress> <span id="proof-text"></span> <button id="proof-go" class="btn btn--quiet" type="button" hidden>Check anyway</button></p>
       <div class="boardwrap"><div id="board" role="group" aria-label="Daevanion board"></div></div>
       <p id="hint" aria-live="polite"></p>
       <div id="tip" role="tooltip" hidden></div>
@@ -437,7 +440,7 @@ try { saved = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) {}
 const state = {
   crystals: Number.isInteger(saved.crystals) ? saved.crystals : P.BOARD.pool || 30,  // all your crystals; the class boards start at their full pool
   sub: saved.sub >= 0 && saved.sub < P.STARTS.length ? saved.sub : 0,  // which of the four class boards is on screen
-  later: Number.isInteger(saved.later) ? saved.later : 0,  // crystals still to come: the route is planned for crystals + later
+  later: Number.isInteger(saved.later) ? saved.later : 0, laterAll: !!saved.laterAll,  // crystals still to come: the route is planned for crystals + later
   must: (saved.must || []).filter(s => P.skills.includes(s)),  // class boards: the skills the route has to reach
   avoid: (saved.avoid || []).filter(s => P.skills.includes(s)),  // and the skills it never opens
   group: (saved.group || []).filter(g => g && g.name && Array.isArray(g.nodes)),  // players whose boards you follow: [{name, nodes}]
@@ -500,6 +503,7 @@ const tiles = P.NODES.map((n, i) => {
 });
 // the four class boards share the screen: one is shown at a time, each button says how much of the pool it takes
 const SUBS = P.STARTS.map(i => P.NODES[i].board), subName = k => SUBS[k][0].toUpperCase() + SUBS[k].slice(1);
+const scan = el('div'); scan.id = 'scan'; scan.hidden = true; $('board').appendChild(scan);  // the row the exact check is reading
 function showSub() {
   tiles.forEach((tile, i) => { tile.hidden = P.NODES[i].sub !== state.sub; });
   [...$('sub-switch').children].forEach((b, k) => b.setAttribute('aria-pressed', k === state.sub));
@@ -605,12 +609,62 @@ function update() {
   timer = setTimeout(() => { render(); document.body.classList.remove('busy'); }, 30);  // let the page repaint first
 }
 
-let otherCache = { key: '', set: null };
+let otherCache = { key: '', set: null }, lastDrawn = '';
+
+// ---- the exact check. proof.quick: the quick search's plan; proof.now / proof.later: the boards the check has reached so far
+let proof = { key: '' };
+const tiny = v => (100 * (Math.exp(v) - 1)).toLocaleString(LANG, { maximumFractionDigits: 4 }) + '%';
+// the check can take close to 1 GB: it starts by itself only where that much is known or likely to be free (a computer, not a phone)
+const roomy = (navigator.deviceMemory || (matchMedia('(pointer: fine)').matches ? 8 : 2)) >= 8;
+function startProof(key, quick, job, forced) {
+  if (proof.worker) proof.worker.terminate();
+  proof = { key, quick, now: null, later: null, worker: null };
+  const say = (text, part) => { $('proof').hidden = !text; $('proof-text').textContent = text; $('proof-bar').hidden = part == null; if (part != null) $('proof-bar').value = part; };
+  const goalOf = set => { const s = P.score(P.totals(set), job.build, job.target), mix = P.GOALS[job.goal]; return mix[0] * Math.log(s[0]) + mix[1] * Math.log(s[1]); };
+  scan.hidden = true;
+  $('proof-go').hidden = true;
+  if (!quick.seq.length) return say('');
+  if (!roomy && !forced) {
+    $('proof').classList.remove('ok'); $('proof-go').hidden = false; $('proof-go').onclick = () => startProof(key, quick, job, true);
+    return say(T('This route comes from the quick search. The exact check needs a lot of memory and may not run on this device.'));
+  }
+  let w; try { w = new Worker('exact.js'); } catch (e) { return say(''); }
+  proof.worker = w;
+  say(T('Checking every possible board…'), 0);
+  w.onerror = () => { scan.hidden = true; say(T('This board could not be checked on this device. The route shown is the quick search’s.')); };
+  w.onmessage = e => {
+    if (proof.key !== key) return;
+    const m = e.data;
+    if (m.type === 'scan') {
+      scan.hidden = m.boards > 1 && m.board !== state.sub; scan.style.setProperty('--y', m.y);
+      say(T('Checking every possible board…') + ' ' + (m.boards > 1 ? T('{name}, row {a} of {b}.', { name: subName(m.board), a: m.row + 1, b: m.rows }) : T('Row {a} of {b}.', { a: m.row + 1, b: m.rows }))
+        + (proof.margin > 1e-9 ? ' ' + T('So far: nothing can beat this route by more than {x}.', { x: tiny(proof.margin) }) : ''), (m.board + (m.row + 1) / m.rows) / m.boards);
+    } else if (m.type === 'margin') { if (m.stage === 'now' && !m.part) proof.margin = m.margin; }
+    else if (m.stage === 'later' && m.type === 'done') proof.later = new Set(m.set);
+    else if (m.stage === 'now' && (m.type === 'better' || m.type === 'done')) {
+      const changed = !proof.now || m.set.length !== proof.now.size || m.set.some(i => !proof.now.has(i));
+      proof.now = new Set(m.set);
+      if (m.type === 'done') {
+        scan.hidden = true; w.terminate(); proof.worker = null;
+        const gain = goalOf(proof.now) - goalOf(quick.chosen), found = gain > 1e-7 ? T('The check found a better route than the quick search: {x} more on your goal.', { x: tiny(gain) }) + ' ' : '';
+        say(m.gap == null ? T('This board is too large to check in full. The route shown is the best one found.')
+          : found + (m.gap <= 1e-6 ? T('Proven best: no board does better with these settings.') : T('Proven: no board can beat this route by more than {x}.', { x: tiny(m.gap) })));
+        $('proof').classList.toggle('ok', m.gap != null);
+      }
+      if (changed || m.type === 'done') render();
+    }
+  };
+  $('proof').classList.remove('ok');
+  w.postMessage(Object.assign({ start: [...quick.chosen], startLater: quick.later ? [...quick.later.chosen] : null }, job));
+}
 function render() {
   const b = state.build, t = targetById(state.target), mix = P.GOALS[state.goal], tName = T(t.name);
-  const later = Math.min(state.later, MAX - state.crystals);  // never past the whole board, or the class boards' pool
+  const later = state.laterAll ? MAX - state.crystals : Math.min(state.later, MAX - state.crystals);  // never past the whole board, or the class boards' pool
   // the recommended route always starts from an empty board, with all your crystals: it is the board to aim for, not an extension of the one you have
-  const plan = P.plan(state.crystals, b, state.goal, [], t, { must: state.must, avoid: state.avoid, later }); lastPlan = plan.chosen;
+  // the quick search answers at once; the exact check (exact.js, in a worker) then looks at every possible board and replaces it
+  const key = JSON.stringify([P.id, P.cls, state.crystals, later, b, state.goal, t, state.must, state.avoid]);
+  if (proof.key !== key) startProof(key, P.plan(state.crystals, b, state.goal, [], t, { must: state.must, avoid: state.avoid, later }), { id: P.id, cls: P.cls, build: b, goal: state.goal, target: t, crystals: state.crystals, later, must: state.must, avoid: state.avoid });
+  const plan = proof.now ? P.asPlan(proof.now, later > 0 ? proof.later : null, b, state.goal, t, { must: state.must, loss: proof.quick.later ? proof.quick.later.loss : 0 }) : proof.quick; lastPlan = plan.chosen;
   const laterSeq = plan.later ? plan.later.seq : [];
   const sNow = P.totals(state.owned), sAfter = P.totals(plan.chosen);
   const sc = s => P.score(s, b, t), vs = (a, base) => a / base - 1;
@@ -633,6 +687,13 @@ function render() {
     tile.dataset.status = status.slice(2, 3).toUpperCase() + status.slice(3);  // "Buy as step 4", for the tooltip
     tile.setAttribute('aria-pressed', planning ? mine : owned);
   });
+  // a new route draws itself in buy order; the same route shown again (a tab, a click) stays still
+  const drawn = showRoute ? [...plan.seq, ...laterSeq].join() : '';
+  if (drawn !== lastDrawn) {
+    lastDrawn = drawn;
+    tiles.forEach((tile, i) => { if (step.has(i)) tile.style.setProperty('--k', (step.get(i) / step.size).toFixed(3)); });
+    $('board').classList.remove('draw'); void $('board').offsetWidth; if (drawn) $('board').classList.add('draw');
+  }
   // how the pool is split: what the board on screen holds of each class board
   const shown = planning ? state.manual : showRoute ? new Set([...plan.seq, ...laterSeq]) : state.owned;
   [...$('sub-switch').children].forEach((btn, k) => {
@@ -651,6 +712,9 @@ function render() {
   $('clear-mine').disabled = $('cmp-mine').disabled = !state.manual.size;
   $('copy-owned').disabled = !state.owned.size;
   $('target-note').textContent = T(t.note);
+  // the numbers the plan is made against: the encounter's, or the opponent's
+  const tStats = Object.assign(B.customDefaults(b), t.opp || Object.assign({ acc: t.acc, crit: t.crit }, t.over));
+  $('target-stats').replaceChildren(...B.customFields.map(([k, label]) => { const row = el('div'); row.append(el('dt', '', T(label)), el('dd', '', (+tStats[k]).toLocaleString(LANG, { maximumFractionDigits: 2 }))); return row; }));
 
   // --- Plan ---
   // like every figure on this tab: against an empty board
@@ -800,7 +864,8 @@ function setCrystals(v) {
 $('crystals').addEventListener('change', e => setCrystals(e.target.value));
 $('slider').addEventListener('input', e => { $('crystals').value = e.target.value; });
 $('slider').addEventListener('change', e => setCrystals(e.target.value));
-$('later').value = state.later;
+$('later').value = state.later; $('later-all').checked = $('later').disabled = state.laterAll;
+$('later-all').addEventListener('change', e => { state.laterAll = $('later').disabled = e.target.checked; update(); });
 $('later').addEventListener('change', e => { state.later = Math.max(0, Math.min(MAX, Math.round(+e.target.value) || 0)); e.target.value = state.later; update(); });
 // class boards: the skills to reach or avoid. A skill can sit on several nodes; a choice covers them all.
 // The boxes are only a draft: the route is planned again when the dialog closes with Done, not on every tick.

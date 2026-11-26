@@ -235,6 +235,22 @@ pre { margin: var(--space-sm) 0; padding: var(--space-sm); overflow-x: auto; bor
 #opp-box[hidden] { display: none; }
 
 .busy #board, .busy .pane { opacity: 0.6; }
+/* while the route is being worked out the board breathes; then the route draws itself, one node after the other in buy order */
+.busy #board { animation: think 0.9s var(--ease-in-out) infinite alternate; }
+@keyframes think { to { opacity: 0.3; } }
+#board.draw :is(.node.route, .node.later) { animation: draw 0.28s var(--ease-out) backwards; animation-delay: calc(var(--k, 0) * 1400ms); }
+@keyframes draw { from { opacity: 0; transform: scale(0.5); } }
+/* the exact check: a band on the row being read, and its result above the board */
+#board { position: relative; }
+#scan { position: absolute; left: 0; right: 0; top: var(--space-sm); height: var(--cell); background: color-mix(in oklab, var(--color-accent) 22%, transparent); border-block: var(--rule-hair) solid var(--color-accent); pointer-events: none; transform: translateY(calc(var(--y, 0) * (var(--cell) + var(--space-2xs)))); transition: transform var(--dur-short) linear; }
+.tick { display: flex; align-items: center; gap: var(--space-2xs); }
+.tstats { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0 var(--space-md); margin: 0; color: var(--color-muted); font-size: var(--text-xs); line-height: 1.5; }
+.tstats > div { display: flex; justify-content: space-between; gap: var(--space-xs); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.tstats dd { margin: 0; color: var(--color-ink); font-variant-numeric: tabular-nums; }
+.proof { display: flex; align-items: center; gap: var(--space-xs); min-height: 2.4em; }
+.proof progress { flex: none; width: 6rem; accent-color: var(--color-accent); }
+.proof.ok { color: var(--color-success); }
+@media (prefers-reduced-motion: reduce) { .busy #board, #board.draw .node { animation: none; } #scan { transition: none; } }
 
 /* planned for later: on the route, not affordable yet */
 .node.later { border: var(--rule-hair) dashed color-mix(in oklab, var(--color-accent) 70%, var(--color-ink)); background: var(--color-accent-soft); color: var(--color-ink); }
