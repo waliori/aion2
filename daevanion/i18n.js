@@ -421,7 +421,7 @@ Object.assign(FR, {
   'Your crystals: all of them, placed or free. The route spends them from an empty board.': 'Vos cristaux : tous, placés ou libres. Le chemin les dépense à partir d’un plateau vide.',
   'Expected later: optional, the route is then planned for the larger total so nothing has to be reset. Tick “Up to the maximum” to plan once for the most crystals you can have and follow that one order from now on.': 'Attendus plus tard : facultatif, le chemin est alors prévu pour le total final et rien n’aura à être réaffecté. Cochez « Jusqu’au maximum » pour planifier une seule fois pour le plus de cristaux que vous pouvez avoir, et suivre ensuite ce même ordre.',
   'Up to the maximum': 'Jusqu’au maximum',
-  'Each gain is measured against an empty board. The selected one is marked.': 'Chaque gain est mesuré par rapport à un plateau vide. La ligne choisie est marquée.',
+  'Each gain is measured against an empty board. The selected one is marked. Survivability is listed only where the encounter changes it.': 'Chaque gain est mesuré par rapport à un plateau vide. La ligne choisie est marquée. La survie n’est indiquée que là où la rencontre la change.',
   'Damage, left': 'Dégâts, gauche',
   'Damage, right': 'Dégâts, droite',
   'Eff. HP, left': 'PV eff., gauche',

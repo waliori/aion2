@@ -319,9 +319,9 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
         </section>
         <section>
           <h2 id="cmp-enc-title"></h2>
-          <p class="note">Each gain is measured against an empty board. The selected one is marked.</p>
+          <p class="note">Each gain is measured against an empty board. The selected one is marked. Survivability is listed only where the encounter changes it.</p>
           <div class="scroll"><table>
-            <thead><tr><th id="cmp-enc-head"></th><th class="num">Damage, left</th><th class="num">Damage, right</th><th class="num">Difference</th><th class="num">Eff. HP, left</th><th class="num">Eff. HP, right</th><th class="num">Difference</th></tr></thead>
+            <thead><tr><th id="cmp-enc-head"></th><th class="num">Damage, left</th><th class="num">Damage, right</th><th class="num">Difference</th><th class="num ehp">Eff. HP, left</th><th class="num ehp">Eff. HP, right</th><th class="num ehp">Difference</th></tr></thead>
             <tbody id="cmp-enc"></tbody>
           </table></div>
         </section>
@@ -949,9 +949,13 @@ function render() {
   const gainRow = (name, x, y, cls) => ({ cls, cells: [name, [signed(x - 1), 'num'], [signed(y - 1), 'num'], [signed(y / x - 1), tone(y - x, 1)]] });
   // both boards against every encounter
   $('cmp-enc-title').textContent = T(B.encTitle); $('cmp-enc-head').textContent = T(B.encHead);
-  rows('cmp-enc', targets().filter(x => x.id !== 'custom' || state.target === 'custom' || B.canLoadOpponent).map(x => {
-    const a = P.score(tA, b, x), z = P.score(tB, b, x), two = k => [[signed(a[k] - 1), 'num'], [signed(z[k] - 1), 'num'], [signed(z[k] / a[k] - 1), tone(z[k] - a[k], 1)]];
-    return { cls: x.id === t.id ? 'current' : '', cells: [T(x.name), ...two(0), ...two(1)] };
+  const encs = targets().filter(x => x.id !== 'custom' || state.target === 'custom' || B.canLoadOpponent).map(x => ({ x, a: P.score(tA, b, x), z: P.score(tB, b, x) }));
+  // survivability is left out when no encounter changes it (on Ariel every boss hits alike: nobody has measured their hits)
+  const ehpVaries = encs.some(e => Math.abs(e.a[1] - encs[0].a[1]) + Math.abs(e.z[1] - encs[0].z[1]) > 1e-9);
+  for (const th of document.querySelectorAll('th.ehp')) th.hidden = !ehpVaries;
+  rows('cmp-enc', encs.map(({ x, a, z }) => {
+    const two = k => [[signed(a[k] - 1), 'num'], [signed(z[k] - 1), 'num'], [signed(z[k] / a[k] - 1), tone(z[k] - a[k], 1)]];
+    return { cls: x.id === t.id ? 'current' : '', cells: [T(x.name), ...two(0), ...(ehpVaries ? two(1) : [])] };
   }));
   // the damage gained, one step of the formula at a time: Attack after Defense, the boost bucket, crits, hits that land, and what is outside the hit
   const steps = x => { const withCrit = x.normal + x.critRate * (x.crit - x.normal); return [x.normal / x.bucket || 1, x.bucket, withCrit / x.normal || 1, x.average / withCrit || 1]; };
