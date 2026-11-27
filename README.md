@@ -148,7 +148,7 @@ Nezekan, Zikel and Vaizel have 88 nodes each, Triniel 116: general stats (Attack
 
 The exact check can take close to 1 GB of memory, so it starts by itself only on a computer; on a phone the page keeps the quick route and offers a "Check anyway" button.
 
-On Ariel the Why tab has a "PvE or Boss?" table: each PvE node beside its Boss twin, what one more is worth against the selected encounter, per crystal, and against a monster that is not a boss (where Boss stats give nothing). Compare lists the steps of the hit (Attack, Damage Boost, normal and critical hit) and, on Ariel, the damage gained against a non-boss monster.
+On Ariel the Why tab has a "PvE or Boss?" table: each PvE node beside its Boss twin, what one more is worth against the selected encounter, per crystal, and against a monster that is not a boss (where Boss stats give nothing). Compare lists the steps of the hit (Attack, Damage Boost, normal and critical hit) and, on Ariel, the damage gained against a non-boss monster. Below that it sets the two boards against every encounter, splits the damage gained into the steps of the formula (Attack, Damage Boost, crits, hits that land), walks through one hit taken, and counts crystals and stats by group: Boss only, PvE and general on Ariel, the stat families on the other boards.
 
 "Up to the maximum" does the same for the most crystals you can have (180 on Ariel, 110 on Azphel, the pool of 416 on the class boards), so one order can be followed from now on; it replaces the number typed under "Expected later". Under the encounter or opponent, the page lists the numbers the plan is made against (the boss's or the player's stats).
 

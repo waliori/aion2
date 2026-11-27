@@ -72,7 +72,8 @@ const UI = {
     worthNote: L('One node of each kind on top of what you own, against the selected encounter, sorted by worth per crystal for your goal.'),
     compareNote: L('Both boards are valued with your stats, against the selected encounter.'),
     pveBoss: L('PvE stats work on every monster. Boss stats work only on bosses, and against a boss the two count the same, point for point. So against a boss only the size and the price of the node differ; against any other monster a Boss node gives nothing. Each row is one node on top of what you own. The last column uses the open world encounter.'),
-    mobRow: L('Damage gained against a non-boss monster'),
+    mobRow: L('Damage gained against a non-boss monster'), landRow: L('From hits not blocked'),
+    cmpGroups: [[L('Boss only'), k => k.startsWith('Boss ')], [L('PvE, every monster'), k => k.startsWith('PvE ')], [L('General'), () => true]],
     statsNote: L('Without any Ariel nodes. The best route depends on these: 1.5% Damage Boost is worth more at 50% than at 200%.'),
     loaded: (name, b, nodes) => T('Loaded {name}: Attack {attack}, Damage Boost {boost}%, Critical Hit {crit}, Accuracy {acc}, Damage Tolerance {tol}%, Critical Damage Boost {cdb}%. {nodes} marked as owned. Added up from gear, titles and boards; pets, wings, skill passives and base stats are not in the data, and HP is not available. Check them under My stats.',
       { name, attack: int(b.attack), boost: dec(b.damage_boost_pct), crit: int(b.crit_hit), acc: int(b.accuracy), tol: dec(b.tolerance_pct), cdb: dec(b.crit_damage_boost_pct), nodes }),
@@ -192,6 +193,7 @@ const UI = {
     encNote: L('The same route against each opponent. An opponent is a set of player stats: your own, or the one you chose under My stats.'),
     worthNote: L('One node of each kind on top of what you own, against the selected opponent, sorted by worth per crystal for your goal.'),
     compareNote: L('Both boards are valued with your stats, against the selected opponent.'),
+    landRow: L('From hits not evaded'),
     statsNote: L('Without any Azphel nodes. Only what counts against players is here: PvE and Boss stats do nothing in PvP.'),
     loaded: (name, b, nodes) => T('Loaded {name}: Attack {attack}, Damage Boost {boost}%, Critical Hit {crit}, Accuracy {acc}, Defense {def}, Damage Tolerance {tol}%, Critical Hit Resist {res}, Evasion {eva}, Block {block}. {nodes} marked as owned. Added up from gear, titles and boards; pets, wings, skill passives and base stats are not in the data, and HP is not available. Check them under My stats.',
       { name, attack: int(b.attack), boost: dec(b.damage_boost_pct), crit: int(b.crit_hit), acc: int(b.accuracy), def: int(b.defense), tol: dec(b.tolerance_pct), res: int(b.crit_resist), eva: int(b.evasion), block: int(b.block), nodes }),
@@ -262,7 +264,7 @@ const GENERAL_SHORT = { 'Attack Bonus': 'Atk', 'Damage Boost': 'Dmg', 'Critical 
 const GENERAL_SHORT_FR = { 'Attack Bonus': 'ATQ', 'Damage Boost': 'DGT', 'Critical Hit': 'CRIT', 'Critical Damage Boost': 'DGT.C', 'Combat Speed': 'VIT', 'Cooldown Reduction': 'Rech', 'Multi-hit Chance': 'Multi',
   'Damage Tolerance': 'Tol', 'Defense Bonus': 'DÉF', 'Critical Hit Resist': 'R.CRIT', 'Critical Damage Tolerance': 'Tol.C', 'Multi-hit Resist': 'R.Multi', HP: 'PV', MP: 'PM' };
 UI.class = Object.assign({}, UI.ariel, {
-  pveBoss: null, mobRow: null,  // the class boards have no Boss stats
+  pveBoss: null, mobRow: null, cmpGroups: null,  // the class boards have no Boss stats
   store: 'class-planner-1', label: L('Class boards'), classBoard: true,
   title: L('Class boards route planner'), heading: L('Class boards route planner.'),
   tagline: L('Nezekan, Zikel, Vaizel and Triniel, paid from one pool of 416 points and planned together. Stats are scored in PvE; skill levels are not scored, tick the ones you want. Square icons are active skills, round ones passives.'),

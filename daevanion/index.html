@@ -317,6 +317,38 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
             <tbody id="cmp"></tbody>
           </table></div>
         </section>
+        <section>
+          <h2 id="cmp-enc-title"></h2>
+          <p class="note">Each gain is measured against an empty board. The selected one is marked.</p>
+          <div class="scroll"><table>
+            <thead><tr><th id="cmp-enc-head"></th><th class="num">Damage, left</th><th class="num">Damage, right</th><th class="num">Difference</th><th class="num">Eff. HP, left</th><th class="num">Eff. HP, right</th><th class="num">Difference</th></tr></thead>
+            <tbody id="cmp-enc"></tbody>
+          </table></div>
+        </section>
+        <section>
+          <h2>Where the damage comes from.</h2>
+          <p class="note">The damage gained, split into the steps of the formula. The steps multiply, so they do not add up exactly.</p>
+          <div class="scroll"><table>
+            <thead><tr><th>Step</th><th class="num">Left board</th><th class="num">Right board</th><th class="num">Difference</th></tr></thead>
+            <tbody id="cmp-src"></tbody>
+          </table></div>
+        </section>
+        <section>
+          <h2>The hit you take.</h2>
+          <p class="note">One hit on you, step by step, with each board.</p>
+          <div class="scroll"><table>
+            <thead><tr><th>Step</th><th class="num">Left board</th><th class="num">Right board</th><th class="num">Difference</th></tr></thead>
+            <tbody id="cmp-taken"></tbody>
+          </table></div>
+        </section>
+        <section>
+          <h2>Crystals and stats.</h2>
+          <p class="note">Where each board puts its crystals, and the stats it adds up to.</p>
+          <div class="scroll"><table>
+            <thead><tr><th>Group and stat</th><th class="num">Left board</th><th class="num">Right board</th><th class="num">Difference</th></tr></thead>
+            <tbody id="cmp-fam"></tbody>
+          </table></div>
+        </section>
       </div>
 
       <div class="pane" id="pane-stats" role="tabpanel" aria-labelledby="tab-stats" hidden>
@@ -913,8 +945,43 @@ function render() {
     { cells: [T('Average hit'), [int(hA.average), 'num'], [int(hB.average), 'num'], diff(hA.average, hB.average, int)] },
     { cells: [T('Crit chance'), [rate(hA.critRate), 'num'], [rate(hB.critRate), 'num'], diff(hA.critRate, hB.critRate, rate)] },
     { cells: [T(B.missRow), [rate(hA.blocked), 'num'], [rate(hB.blocked), 'num'], diff(hA.blocked, hB.blocked, rate, -1)] },
-    ...[...new Set([...Object.keys(tA), ...Object.keys(tB)])].sort().map(k => ({ cells: [T(k), [plain(tA[k] || 0), 'num'], [plain(tB[k] || 0), 'num'], diff(tA[k] || 0, tB[k] || 0, plain)] })),
   ]);
+  const gainRow = (name, x, y, cls) => ({ cls, cells: [name, [signed(x - 1), 'num'], [signed(y - 1), 'num'], [signed(y / x - 1), tone(y - x, 1)]] });
+  // both boards against every encounter
+  $('cmp-enc-title').textContent = T(B.encTitle); $('cmp-enc-head').textContent = T(B.encHead);
+  rows('cmp-enc', targets().filter(x => x.id !== 'custom' || state.target === 'custom' || B.canLoadOpponent).map(x => {
+    const a = P.score(tA, b, x), z = P.score(tB, b, x), two = k => [[signed(a[k] - 1), 'num'], [signed(z[k] - 1), 'num'], [signed(z[k] / a[k] - 1), tone(z[k] - a[k], 1)]];
+    return { cls: x.id === t.id ? 'current' : '', cells: [T(x.name), ...two(0), ...two(1)] };
+  }));
+  // the damage gained, one step of the formula at a time: Attack after Defense, the boost bucket, crits, hits that land, and what is outside the hit
+  const steps = x => { const withCrit = x.normal + x.critRate * (x.crit - x.normal); return [x.normal / x.bucket || 1, x.bucket, withCrit / x.normal || 1, x.average / withCrit || 1]; };
+  const h0 = H({}), s0 = steps(h0), stA = steps(hA).map((v, k) => v / s0[k]), stB = steps(hB).map((v, k) => v / s0[k]);
+  const restA = sA[0] / (hA.average / h0.average), restB = sB[0] / (hB.average / h0.average);
+  rows('cmp-src', [
+    ...[T('From Attack'), T('From Damage Boost'), T('From critical hits'), T(B.landRow)].map((name, k) => gainRow(name, stA[k], stB[k])),
+    ...(Math.abs(restA - 1) + Math.abs(restB - 1) > 1e-9 ? [gainRow(T('From speed, cooldown and status effects'), restA, restB)] : []),
+    gainRow(T('Damage gained from the board'), sA[0], sB[0], 'major'),
+  ]);
+  // one hit on you, step by step
+  const taken = P.model.taken, kA = taken(tA, b, t), kB = taken(tB, b, t), hpOf = s => b.hp + (s.HP || 0);
+  const num = (name, x, y, fmt, sense, cls) => ({ cls, cells: [name, [fmt(x), 'num'], [fmt(y), 'num'], diff(x, y, fmt, sense)] });
+  rows('cmp-taken', [
+    num(T('Hit before your Defense'), kA.hit ?? kA.attack, kB.hit ?? kB.attack, int, 0),
+    num(T('After your Defense'), kA.afterDef, kB.afterDef, int, -1),
+    num(T('After their Damage Boost and your Tolerance'), kA.afterDef * kA.bucket, kB.afterDef * kB.bucket, int, -1),
+    num(T('Average hit taken'), kA.average, kB.average, int, -1, 'major'),
+    ...(B.mobRow ? [num(T('Average hit taken from a non-boss monster'), taken(P.model.mob(tA), b, P.TARGETS[0]).average, taken(P.model.mob(tB), b, P.TARGETS[0]).average, int, -1)] : []),
+    num(T('HP'), hpOf(tA), hpOf(tB), int, 1),
+    num(T('Hits you survive'), hpOf(tA) / kA.average, hpOf(tB) / kB.average, plain, 1, 'major'),
+  ]);
+  // crystals and stats by group: Boss only, PvE and general on Ariel; the stat families elsewhere. A node counts where its first stat is.
+  const GROUPS = B.cmpGroups || [...FAMILIES.map(([name, , list]) => [name, k => list.some(e => e[0] === k)]), [L('Other'), () => true]];
+  const groupOf = k => GROUPS.findIndex(g => g[1](k)), keys = [...new Set([...Object.keys(tA), ...Object.keys(tB)])].sort();
+  const paid = (set, gi) => [...set].reduce((a, i) => a + (P.NODES[i].fx.length && groupOf(P.NODES[i].stat) === gi ? P.NODES[i].cost : 0), 0);
+  rows('cmp-fam', GROUPS.flatMap(([name], gi) => {
+    const ks = keys.filter(k => groupOf(k) === gi), ca = paid(SA, gi), cb = paid(SB, gi);
+    return !ks.length && !ca && !cb ? [] : [num(T('{group}: crystals', { group: T(name) }), ca, cb, plain, 0, 'major'), ...ks.map(k => num(T(k), tA[k] || 0, tB[k] || 0, plain, 1))];
+  }));
 }
 
 function setCrystals(v) {

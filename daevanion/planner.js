@@ -64,6 +64,13 @@
       const average = (normal + critRate * (crit - normal)) * (1 - blocked * b.block_loss_pct / 100);
       return { attack, bucket, critRate, blocked, normal, crit, average };
     },
+    // One boss hit on you, step by step (the same arithmetic as the survival half of score)
+    taken(stats, b, t) {
+      b = ARIEL.env(b, t);
+      const g = k => stats[k] || 0, hit = b.boss_hit, afterDef = hit - 0.1 * (g('PvE Defense') + g('Boss Defense'));
+      const bucket = 1 + (b.boss_damage_boost_pct - b.tolerance_pct - g('PvE Damage Tolerance') - g('Boss Damage Tolerance')) / 100;
+      return { hit, afterDef, bucket, average: afterDef * bucket * (1 - g('PvE Evasion') * b.evasion_pct_per_point / 100) };
+    },
     // -> [damage dealt multiplier, effective-HP multiplier] against target t, relative to no board
     score(stats, b, t) {
       const g = k => stats[k] || 0;
@@ -157,6 +164,11 @@
       return Object.assign({}, b, { attack: b.attack + g('Attack Bonus'), damage_boost_pct: b.damage_boost_pct + g('Damage Boost'), crit_damage_boost_pct: b.crit_damage_boost_pct + g('Critical Damage Boost') });
     },
     hit(stats, b, t) { return ARIEL.hit(stats, GENERAL.fold(stats, b), t); },
+    taken(stats, b, t) {
+      const g = k => stats[k] || 0, e = ARIEL.env(b, t), hit = e.boss_hit, afterDef = hit - 0.1 * g('Defense Bonus');
+      const bucket = 1 + (e.boss_damage_boost_pct - e.tolerance_pct - g('Damage Tolerance')) / 100;
+      return { hit, afterDef, bucket, average: afterDef * bucket };
+    },
     score(stats, b, t) {
       const g = k => stats[k] || 0, e = ARIEL.env(b, t);
       const tempo = (1 + g('Combat Speed') * b.speed_value / 100) * (1 + g('Cooldown Reduction') * b.cooldown_value / 100) * (1 + g('Multi-hit Chance') * b.multihit_value / 100);
@@ -426,6 +438,8 @@
     close(h.critRate, 0); close(h.blocked, 0.5);                    // 600 crit is 1,100 short of 1,700; 700 accuracy is 500 short of 1,200
     close(hit({ 'PvE Accuracy': 100, 'Critical Hit': 800 }, b, L).critRate, 0.2);     // 1,400 is 300 short: 50% - 30%
     close(hit({ 'PvE Accuracy': 100 }, b, L).average, 8000 * (1 - 0.4 * 0.5));
+    { const s = { 'PvE Defense': 300, 'Boss Damage Tolerance': 4, HP: 500 }, k = A.model.taken;  // the hit taken, step by step, is the survival score
+      close(k({}, b, A.TARGETS[0]).average / k(s, b, A.TARGETS[0]).average * (1 + 500 / b.hp), score(s, b)[1]); }
     assert(Object.keys(A.model.mob({ 'Boss Attack': 3, 'PvE Attack': 3, HP: 100 })).join() === 'PvE Attack,HP');  // Boss stats do nothing off a boss
     close(hit({}, b, { acc: 0, crit: 0, over: { boss_defense: 1000, boss_tolerance_pct: 0 } }).normal, 4900 * 1.8);  // an encounter's own boss numbers
     for (const x of baselines(20, b, 'dps', [], L)) assert(spent(x.chosen) <= 20 && connected(x.chosen), x.name);
