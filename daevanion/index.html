@@ -209,6 +209,14 @@ try { document.documentElement.dataset.theme = localStorage.getItem('daevanion-t
             <tbody id="worth"></tbody>
           </table></div>
         </section>
+        <section id="pve-boss" hidden>
+          <h2>PvE or Boss?</h2>
+          <p class="note" id="pve-boss-note"></p>
+          <div class="scroll"><table>
+            <thead><tr><th>Node</th><th class="num">Cost</th><th class="num">Selected encounter</th><th class="num">Per crystal</th><th class="num">Non-boss monster</th></tr></thead>
+            <tbody id="pve-boss-rows"></tbody>
+          </table></div>
+        </section>
         <section>
           <h2>Other ways to spend them.</h2>
           <p class="note">Each row is measured against an empty board, so they compare directly.</p>
@@ -799,6 +807,18 @@ function render() {
   rows('worth', types.map((r, k) => ({ cls: worth(r) > 0 ? '' : 'faint', cells: [
     [[describe(r), ...r.fx.map(e => el('small', '', (r.fx.length > 1 ? T(e[0]) + ': ' : '') + (how[e[0]] || '')))], ''], [r.costs.join(T(' or ')), 'num'], [signed(r.damage), 'num'], [signed(r.ehp), 'num'],
     [bar(worth(r) / topWorth, k === 0), 'track'], [signed(worth(r)), 'num']] })));
+  // PvE or Boss: the twin nodes side by side, against the selected encounter and against a monster that is no boss
+  $('pve-boss').hidden = !B.pveBoss;
+  if (B.pveBoss) {
+    const TWINS = ['Attack', 'Damage Boost', 'Defense', 'Damage Tolerance'], mob = P.model.mob, m0 = P.score(mob(sNow), b, P.TARGETS[0]);
+    const rank = r => TWINS.indexOf(r.kind.replace(/^(PvE|Boss) /, '')) * 2 + (r.kind.startsWith('Boss') ? 1 : 0);
+    $('pve-boss-note').textContent = T(B.pveBoss);
+    rows('pve-boss-rows', types.filter(r => /^(PvE|Boss) /.test(r.kind) && rank(r) >= 0).sort((x, y) => rank(x) - rank(y)).map(r => {
+      const k = rank(r) < 4 ? 0 : 1, gain = k ? r.ehp : r.damage, [stat, value] = r.fx[0];  // the first two twins deal damage, the last two keep you alive
+      const off = P.score(mob(Object.assign({}, sNow, { [stat]: (sNow[stat] || 0) + value })), b, P.TARGETS[0])[k] / m0[k] - 1;
+      return { cells: [describe(r), [r.costs.join(T(' or ')), 'num'], [signed(gain), 'num'], [signed(gain / r.costs[0]), 'num'], [signed(off), 'num']] };
+    }));
+  }
 
   // other ways to spend the same crystals, all measured against an empty board
   const ways = [{ name: T('This plan'), chosen: plan.chosen, cost: spent }, ...P.baselines(state.crystals, b, state.goal, [], t).map(x => ({ ...x, name: T(x.name), cost: P.spent(x.chosen) }))];
@@ -885,6 +905,11 @@ function render() {
     { cells: [T('Crystals in the board'), P.spent(SA), P.spent(SB), diff(P.spent(SA), P.spent(SB), plain, 0)] },
     { cells: [T('Damage gained from the board'), [signed(sA[0] - 1), 'num'], [signed(sB[0] - 1), 'num'], [signed(sB[0] / sA[0] - 1), tone(sB[0] - sA[0], 1)]], cls: 'major' },
     { cells: [T('Survivability gained from the board'), [signed(sA[1] - 1), 'num'], [signed(sB[1] - 1), 'num'], [signed(sB[1] / sA[1] - 1), tone(sB[1] - sA[1], 1)]], cls: 'major' },
+    ...(B.mobRow ? [(() => { const g = s => P.score(P.model.mob(s), b, P.TARGETS[0])[0], x = g(tA), y = g(tB); return { cells: [T(B.mobRow), [signed(x - 1), 'num'], [signed(y - 1), 'num'], [signed(y / x - 1), tone(y - x, 1)]] }; })()] : []),
+    { cells: [T('Attack'), [int(hA.attack), 'num'], [int(hB.attack), 'num'], diff(hA.attack, hB.attack, int)] },
+    { cells: [T(B.boostRow), [rate(hA.bucket - 1), 'num'], [rate(hB.bucket - 1), 'num'], diff(hA.bucket, hB.bucket, rate)] },
+    { cells: [T('Normal hit'), [int(hA.normal), 'num'], [int(hB.normal), 'num'], diff(hA.normal, hB.normal, int)] },
+    { cells: [T('Critical hit'), [int(hA.crit), 'num'], [int(hB.crit), 'num'], diff(hA.crit, hB.crit, int)] },
     { cells: [T('Average hit'), [int(hA.average), 'num'], [int(hB.average), 'num'], diff(hA.average, hB.average, int)] },
     { cells: [T('Crit chance'), [rate(hA.critRate), 'num'], [rate(hB.critRate), 'num'], diff(hA.critRate, hB.critRate, rate)] },
     { cells: [T(B.missRow), [rate(hA.blocked), 'num'], [rate(hB.blocked), 'num'], diff(hA.blocked, hB.blocked, rate, -1)] },

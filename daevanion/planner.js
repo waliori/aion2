@@ -48,6 +48,8 @@
       { id: 'ludra', name: 'Eternal Ludra, normal and hard', acc: 1180, crit: 1800, note: 'Crit cap at 1,750 to 1,850 Critical Hit. Parries stop at about 1,100 Accuracy, rarely up to 1,180; the plan uses 1,180.' },
     ],
     env: (b, t) => (t && t.over ? Object.assign({}, b, t.over) : b),  // the build with this encounter's boss numbers
+    // the same stats against a monster that is not a boss: the Boss stats do nothing there
+    mob: stats => Object.fromEntries(Object.entries(stats).filter(([k]) => !k.startsWith('Boss '))),
     // One hit of a 100% skill against target t, in real numbers.
     hit(stats, b, t) {
       b = ARIEL.env(b, t);
@@ -424,6 +426,7 @@
     close(h.critRate, 0); close(h.blocked, 0.5);                    // 600 crit is 1,100 short of 1,700; 700 accuracy is 500 short of 1,200
     close(hit({ 'PvE Accuracy': 100, 'Critical Hit': 800 }, b, L).critRate, 0.2);     // 1,400 is 300 short: 50% - 30%
     close(hit({ 'PvE Accuracy': 100 }, b, L).average, 8000 * (1 - 0.4 * 0.5));
+    assert(Object.keys(A.model.mob({ 'Boss Attack': 3, 'PvE Attack': 3, HP: 100 })).join() === 'PvE Attack,HP');  // Boss stats do nothing off a boss
     close(hit({}, b, { acc: 0, crit: 0, over: { boss_defense: 1000, boss_tolerance_pct: 0 } }).normal, 4900 * 1.8);  // an encounter's own boss numbers
     for (const x of baselines(20, b, 'dps', [], L)) assert(spent(x.chosen) <= 20 && connected(x.chosen), x.name);
     assert(score(totals(plan(20, b, 'dps', [], L).chosen), b, L)[0] >= Math.max(...baselines(20, b, 'dps', [], L).map(x => score(totals(x.chosen), b, L)[0])) - 1e-9);
