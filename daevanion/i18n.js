@@ -372,6 +372,7 @@ Object.assign(FR, {
   'Keep or reset: starting over with all {crystals} would be {x} better for your goal, and would move {n} of your nodes.': 'Garder ou réinitialiser : repartir de zéro avec {crystals} serait {x} meilleur pour votre objectif, et déplacerait {n} de vos nœuds.',
   'Keep or reset: starting over would gain nothing. What you own already sits on the best board.': 'Garder ou réinitialiser : repartir de zéro n’apporterait rien. Ce que vous possédez est déjà sur le meilleur plateau.',
   'The darker a node, the more of these players own it. {common} nodes are owned by at least half of them; this plan takes {shared} of those.': 'Plus un nœud est foncé, plus ces joueurs sont nombreux à le posséder. {common} nœuds sont possédés par au moins la moitié d’entre eux ; ce plan en prend {shared}.',
+  'Nothing has changed on the game’s site since the last load. It can lag behind the game, so try again later.': 'Rien n’a changé sur le site du jeu depuis le dernier chargement. Il peut être en retard sur le jeu, réessayez plus tard.',
   'The other boards will use this character too, without loading again.': 'Les autres plateaux utiliseront aussi ce personnage, sans le recharger.',
   'The list is full. Remove a player first.': 'La liste est pleine. Retirez d’abord un joueur.',
   '{name} added: {n} nodes open on this board.': '{name} ajouté : {n} nœuds ouverts sur ce plateau.',

@@ -1173,10 +1173,12 @@ async function fetchCharacter(hit, say) {
   if (!(boards[P.id].build.attack > 0)) throw new Error('This character has no weapon equipped, so there is nothing to calculate from.');
   const cls = C.classOf(d.info);
   try { if (cls) localStorage.setItem('daevanion-class', cls); } catch (e) {}
+  // a refresh that reads exactly what the last load read: the game's site has not caught up with the game yet
+  const same = character && character.hit.characterId === hit.characterId && JSON.stringify(character.boards) === JSON.stringify(boards);
   character = { cls, hit: { name: hit.name, serverName: hit.serverName, serverId: hit.serverId, characterId: hit.characterId, region: hit.region, race: hit.race, level: hit.level }, stamp: Date.now(), boards };
   try { localStorage.setItem(CHAR_KEY, JSON.stringify(character)); } catch (e) {}
   applyCharacter(); buildFields(); showCharacter(); setCrystals(state.crystals);
-  $('char-note').textContent = B.loaded(hit.name, boards[P.id].build, nodesText(state.owned.size)) + ' ' + T('The other boards will use this character too, without loading again.');
+  $('char-note').textContent = B.loaded(hit.name, boards[P.id].build, nodesText(state.owned.size)) + ' ' + T(same ? 'Nothing has changed on the game’s site since the last load. It can lag behind the game, so try again later.' : 'The other boards will use this character too, without loading again.');
   $('char-dialog').close();
   if (B.classBoard && P.CLASSES.includes(cls) && cls !== P.cls) go(P.id, cls);  // a class board follows the class of the character you load
 }
